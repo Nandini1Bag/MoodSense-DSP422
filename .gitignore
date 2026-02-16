@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.Python
+env/
+venv/
+
+# Jupyter
+.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Raw data - keep local only (DON'T push to GitHub)
+data/raw/*.csv
+data/processed/*.npy
+data/processed/*.csv
+
+# Models
+models/*.pkl
