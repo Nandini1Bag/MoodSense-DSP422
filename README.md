@@ -1,151 +1,270 @@
-# MoodSense: Intelligent Music Mood Classification  
+# 🎵 MoodSense: AI-Powered Music Playlist System
+
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.31-FF4B4B.svg)](https://streamlit.io/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 **Course:** MS DSP 422 – Practical Machine Learning  
-**Team:** Group 3  
-**Members:** Ankit Mittal, Albin Anto Jose, Nandini Bag, Kasheena Mulla  
+**Team:** Group 3 (Ankit Mittal, Albin Anto Jose, Nandini Bag, Kasheena Mulla)
+
+> An intelligent music recommendation system that generates personalized playlists from natural language prompts using semantic search and multimodal machine learning.
 
 ---
 
-## Project Overview
-Music streaming platforms contain vast libraries of songs, making emotion-based organization and discovery increasingly important. Traditional metadata such as genre and artist do not fully capture the emotional characteristics of music.  
+## 🎯 Problem Statement
 
-**MoodSense** is a supervised machine learning project that classifies songs into distinct mood categories—**Happy, Sad, Energetic, and Calm**—using Spotify audio features. The project focuses on classical machine learning models, systematic feature encoding, and explainable AI techniques to ensure both predictive performance and interpretability.
+Traditional music search relies on exact keyword matching and manual tagging. Users often struggle to find music that matches their mood or context without knowing specific song titles or artists.
 
-This project is designed as a practical ML pipeline suitable for educational and research-oriented applications, and serves as a foundation for future mood-aware recommendation systems.
-
----
-
-## Problem Statement
-Can we accurately classify the mood of a song using audio-based features and traditional machine learning models, while maintaining interpretability and scalability?
+**MoodSense** solves this by understanding natural language descriptions (e.g., "energetic workout songs with motivational lyrics") and using AI to find matching songs from a database of 30,000+ tracks.
 
 ---
 
-## Dataset
-### Primary Dataset
-- **Spotify Tracks Dataset**
-- Source: Kaggle  
-- Size: 114,000+ tracks  
-- Features used:
-  - Valence
-  - Energy
-  - Danceability
-  - Acousticness
-  - Instrumentalness
-  - Speechiness
-  - Tempo
-  - Loudness
+## ✨ Key Features
 
-Spotify does not provide explicit mood labels. Therefore, mood categories are generated using **rule-based and weak supervision techniques** derived from audio feature patterns.
+- 🎵 **Natural Language Search**: "sad heartbreak songs for crying" → relevant playlist
+- 🤖 **AI-Powered Matching**: Sentence-BERT semantic understanding + audio features
+- 📊 **Mood Classification**: 4-class classifier (Happy, Sad, Anger, Love) with 60% accuracy
+- 🎨 **Interactive Demo**: Streamlit web app with Spotify-inspired UI
+- 📈 **Explainable AI**: SHAP analysis showing which words influence predictions
+- ⚡ **Real-time Inference**: <2 second response for 30K song database
 
 ---
 
-## Mood Categories
-- Happy  
-- Sad  
-- Energetic  
-- Calm  
+## 🏗️ Architecture
+
+```
+User Prompt → Sentence-BERT (384-dim) 
+              ↓
+Audio Intent Extraction (8-dim)
+              ↓
+Mood Prediction (4-dim)
+              ↓
+Combined Vector (396-dim)
+              ↓
+Cosine Similarity with 30K Songs
+              ↓
+Top 20 Ranked Results
+```
 
 ---
 
-## Project Structure
+## 📊 Results
+
+### Phase 1: Mood Classification
+
+| Model | Accuracy | F1 Macro |
+|---|---|---|
+| **Text-Only (TF-IDF + LinearSVC)** | **60.45%** | 0.55 |
+| Combined (Text + Audio) | 60.62% | 0.56 |
+| Audio-Only (Random Forest) | 42.03% | 0.30 |
+
+**Key Finding:** Lyrics carry all emotion signal; audio features alone cannot predict lyric-based moods.
+
+### Phase 2: AI-Prompted Playlists
+
+- ✅ Generated 396-dim embeddings for 30,000 songs
+- ✅ Built semantic retrieval system with keyword-based intent extraction
+- ✅ Demonstrated playlist generation from 5 diverse test prompts
+- ✅ Implemented artist diversity filtering
+
+---
+
+## 🚀 Quick Start
+
+### Try the Live Demo
+
+🌐 **[Launch MoodSense App](https://moodsense-demo.streamlit.app)** *(deploy first)*
+
+### Run Locally
+
+```bash
+# 1. Clone repository
+git clone https://github.com/YOUR_USERNAME/MoodSense-DSP422.git
+cd MoodSense-DSP422
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Download data files (from Google Drive)
+# Place in data/processed/:
+#   - song_embeddings_30k.npy
+#   - song_metadata_30k.csv
+
+# 4. Run Streamlit app
+cd app
+streamlit run moodsense_app.py
+```
+
+App opens at `http://localhost:8501`
+
+---
+
+## 📁 Project Structure
+
+```
 MoodSense-DSP422/
-│
+├── README.md                          # This file
 ├── data/
-│ ├── raw/ # Original datasets (not pushed if large)
-│ └── processed/ # Cleaned and labeled data
-│
+│   ├── raw/                          # Original datasets
+│   └── processed/                    # Embeddings & metadata
 ├── notebooks/
-│ ├── 01_data_exploration.ipynb
-│ ├── 02_label_generation.ipynb
-│ ├── 03_feature_engineering.ipynb
-│ ├── 04_model_training.ipynb
-│ └── 05_explainability.ipynb
-│
-├── models/ # Saved trained models
-├── reports/ # Project report and figures
-└── README.md
-
-yaml
-Copy code
-
----
-
-## Methodology
-1. **Data Exploration & Cleaning**
-   - Analyze feature distributions and correlations
-   - Handle missing values and duplicates
-
-2. **Synthetic Mood Label Generation**
-   - Rule-based mapping using valence, energy, tempo, and acousticness
-   - Validation through manual inspection
-
-3. **Feature Engineering**
-   - Feature scaling using StandardScaler
-   - Dimensionality reduction using PCA/SVD
-
-4. **Model Training**
-   - Logistic Regression
-   - Random Forest
-   - Gradient Boosting
-   - Neural Network (MLP)
-
-5. **Evaluation**
-   - Accuracy
-   - Precision, Recall, F1-score
-   - Confusion matrices
-
-6. **Explainability**
-   - SHAP analysis for feature contribution and interpretability
+│   ├── MoodSense_Complete_Pipeline.ipynb  # Main notebook
+│   ├── 01_data_exploration.ipynb
+│   ├── 02_mood_mapping.ipynb
+│   └── ...
+├── models/                           # Saved ML models
+│   ├── model_text.pkl
+│   ├── scaler.pkl
+│   └── tfidf_vectorizer.pkl
+├── app/                              # Streamlit demo
+│   ├── moodsense_app.py
+│   ├── requirements.txt
+│   └── README.md
+└── reports/                          # Project deliverables
+    ├── final_report.pdf
+    └── presentation.pptx
+```
 
 ---
 
-## Tools & Technologies
-- Python  
-- Google Colab  
-- GitHub  
-- pandas, numpy  
-- scikit-learn  
-- SHAP  
-- matplotlib / seaborn  
+## 🛠️ Tech Stack
+
+| Component | Technology |
+|---|---|
+| **NLP** | Sentence-BERT (all-MiniLM-L6-v2) |
+| **Classification** | LinearSVC, Random Forest, Gradient Boosting, MLP |
+| **Feature Extraction** | TF-IDF, StandardScaler, TruncatedSVD |
+| **Explainability** | SHAP (SHapley Additive exPlanations) |
+| **Frontend** | Streamlit with custom CSS |
+| **Deployment** | Streamlit Cloud (free tier) |
+| **Version Control** | Git + GitHub (with Git LFS) |
 
 ---
 
-## Collaboration Workflow
-- GitHub is used for version control and collaboration
-- Google Colab is used for notebook execution
-- Each notebook has a designated owner to avoid conflicts
+## 📊 Dataset
+
+- **Source:** Kaggle - 550K Spotify Songs Dataset
+- **Size:** 551,443 songs with audio features + BERT-generated emotions
+- **Processed:** 30,000 songs with 396-dim embeddings
+- **Features:** Energy, Danceability, Positiveness, Tempo, Acousticness, Speechiness, Liveness, Instrumentalness
+
+**Note:** Original emotions (joy, sadness, anger, fear, love, surprise) were mapped to 4 moods (Happy, Sad, Anger, Love) for better classification.
 
 ---
 
-## Results & Deliverables
-- Labeled mood classification dataset
-- Multiple trained ML models with performance comparison
-- SHAP-based explainability analysis
-- Well-documented Jupyter notebooks
-- Final project report and presentation
+## 🧪 Methodology
+
+### Phase 1: Mood Classification
+
+1. **Data Cleaning:** Remove noise labels, merge duplicates, 6→4 mood mapping
+2. **Feature Engineering:** TF-IDF (20K features, bigrams), audio feature scaling
+3. **Model Training:** 5 classical ML models with stratified train/test split
+4. **Evaluation:** Classification reports, confusion matrices, SHAP analysis
+
+### Phase 2: Semantic Playlist Generation
+
+1. **Embedding Generation:** Sentence-BERT + audio + mood predictions (396-dim)
+2. **Prompt Encoding:** Keyword-based audio/mood intent extraction
+3. **Similarity Matching:** Cosine similarity ranking
+4. **Post-processing:** Artist diversity filtering (max 2 songs/artist)
 
 ---
 
-## Limitations
-- Mood labels are synthetically generated and subject to interpretation
-- Lyrics and user-context modeling are limited in this phase
-- Real-time Spotify integration is not included
+## 📈 Performance Insights
+
+**From SHAP Analysis:**
+
+| Mood | Top Predictive Words |
+|---|---|
+| **Happy** | love, smile, happy, celebrate, joy |
+| **Sad** | cry, tears, lonely, broken, hurt |
+| **Anger** | hate, kill, fight, rage, mad |
+| **Love** | love, heart, forever, kiss, baby |
+
+**Audio Features:**
+- Most discriminative: `Energy`, `Positiveness`, `Acousticness`
+- Least useful: `Liveness`, `Speechiness` (for mood classification)
 
 ---
 
-## Future Work
-- NLP-based user prompt understanding
-- Hybrid recommendation systems
-- Multi-label mood classification
-- Real-time personalization using user feedback
+## 🎓 Educational Value
+
+This project demonstrates:
+
+- ✅ End-to-end ML pipeline (data → model → deployment)
+- ✅ Multimodal learning (text + audio features)
+- ✅ Semantic search with neural embeddings
+- ✅ Classical ML model comparison
+- ✅ Explainable AI techniques (SHAP)
+- ✅ Production deployment (Streamlit Cloud)
+- ✅ Git workflow with large files (Git LFS)
 
 ---
 
-## How to Run
-1. Open notebooks using **Google Colab**
-2. Mount Google Drive for dataset access (if needed)
-3. Run notebooks sequentially from `01` to `05`
+## 🚧 Limitations & Future Work
+
+### Current Limitations
+- Mood labels are BERT-generated, not human-annotated
+- Audio features alone cannot predict text-based moods (42% accuracy)
+- Keyword-based intent extraction is simplistic
+- No real-time Spotify API integration
+
+### Future Enhancements
+- [ ] Train prompt→mood classifier (replace keyword extraction)
+- [ ] Add user feedback loop to improve rankings
+- [ ] Scale to full 550K dataset
+- [ ] Implement A/B testing for ranking algorithms
+- [ ] Add Spotify OAuth + playlist export
+- [ ] Multi-label mood classification
+- [ ] Personalization based on listening history
 
 ---
 
-## Acknowledgements
-This project is developed as part of **MS DSP 422 – Practical Machine Learning** and is intended for academic and educational purposes.
+## 📝 Citation
+
+If you use this project in your research or work, please cite:
+
+```bibtex
+@misc{moodsense2024,
+  title={MoodSense: AI-Powered Music Playlist Generation},
+  author={Mittal, Ankit and Jose, Albin Anto and Bag, Nandini and Mulla, Kasheena},
+  year={2024},
+  course={MS DSP 422 - Practical Machine Learning}
+}
+```
+
+---
+
+## 👥 Team
+
+- **Ankit Mittal** - [LinkedIn](#) | [GitHub](#)
+- **Albin Anto Jose** - [LinkedIn](#) | [GitHub](#)
+- **Nandini Bag** - [LinkedIn](#) | [GitHub](#)
+- **Kasheena Mulla** - [LinkedIn](#) | [GitHub](#)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+##  Acknowledgements
+
+- **Course:** MS DSP 422 - Practical Machine Learning
+- **Dataset:** Kaggle Spotify Tracks Dataset
+- **Models:** Sentence-Transformers library (Hugging Face)
+- **Deployment:** Streamlit Cloud
+
+---
+
+## 📧 Contact
+
+For questions or collaboration opportunities:
+- **Email:** [your-email@example.com]
+- **Project Link:** [https://github.com/YOUR_USERNAME/MoodSense-DSP422](https://github.com/YOUR_USERNAME/MoodSense-DSP422)
+
+---
+
+**Built with ❤️ for MS DSP 422 | Northwestern University**
