@@ -11,7 +11,7 @@
 
 ---
 
-## 🎯 Problem Statement
+##  Problem Statement
 
 Traditional music search relies on exact keyword matching and manual tagging. Users often struggle to find music that matches their mood or context without knowing specific song titles or artists.
 
@@ -19,18 +19,18 @@ Traditional music search relies on exact keyword matching and manual tagging. Us
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-- 🎵 **Natural Language Search**: "sad heartbreak songs for crying" → relevant playlist
-- 🤖 **AI-Powered Matching**: Sentence-BERT semantic understanding + audio features
-- 📊 **Mood Classification**: 4-class classifier (Happy, Sad, Anger, Love) with 60% accuracy
-- 🎨 **Interactive Demo**: Streamlit web app with Spotify-inspired UI
-- 📈 **Explainable AI**: SHAP analysis showing which words influence predictions
-- ⚡ **Real-time Inference**: <2 second response for 30K song database
+-  **Natural Language Search**: "sad heartbreak songs for crying" → relevant playlist
+-  **AI-Powered Matching**: Sentence-BERT semantic understanding + audio features
+-  **Mood Classification**: 4-class classifier (Happy, Sad, Anger, Love) with 60% accuracy
+-  **Interactive Demo**: Streamlit web app with Spotify-inspired UI
+-  **Explainable AI**: SHAP analysis showing which words influence predictions
+-  **Real-time Inference**: <2 second response for 30K song database
 
 ---
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 User Prompt → Sentence-BERT (384-dim) 
@@ -48,7 +48,7 @@ Top 20 Ranked Results
 
 ---
 
-## 📊 Results
+##  Results
 
 ### Phase 1: Mood Classification
 
@@ -62,18 +62,18 @@ Top 20 Ranked Results
 
 ### Phase 2: AI-Prompted Playlists
 
-- ✅ Generated 396-dim embeddings for 30,000 songs
-- ✅ Built semantic retrieval system with keyword-based intent extraction
-- ✅ Demonstrated playlist generation from 5 diverse test prompts
-- ✅ Implemented artist diversity filtering
+-  Generated 396-dim embeddings for 30,000 songs
+- Built semantic retrieval system with keyword-based intent extraction
+- Demonstrated playlist generation from 5 diverse test prompts
+- Implemented artist diversity filtering
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Try the Live Demo
 
-🌐 **[Launch MoodSense App](https://moodsense-demo.streamlit.app)** *(deploy first)*
+ **[Launch MoodSense App](https://moodsense-demo.streamlit.app)** *(deploy first)*
 
 ### Run Locally
 
@@ -99,7 +99,7 @@ App opens at `http://localhost:8501`
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 MoodSense-DSP422/
@@ -109,8 +109,6 @@ MoodSense-DSP422/
 │   └── processed/                    # Embeddings & metadata
 ├── notebooks/
 │   ├── MoodSense_Complete_Pipeline.ipynb  # Main notebook
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_mood_mapping.ipynb
 │   └── ...
 ├── models/                           # Saved ML models
 │   ├── model_text.pkl
@@ -141,7 +139,7 @@ MoodSense-DSP422/
 
 ---
 
-## 📊 Dataset
+##  Dataset
 
 - **Source:** Kaggle - 550K Spotify Songs Dataset
 - **Size:** 551,443 songs with audio features + BERT-generated emotions
@@ -152,7 +150,7 @@ MoodSense-DSP422/
 
 ---
 
-## 🧪 Methodology
+##  Methodology
 
 ### Phase 1: Mood Classification
 
@@ -170,7 +168,7 @@ MoodSense-DSP422/
 
 ---
 
-## 📈 Performance Insights
+## Performance Insights
 
 **From SHAP Analysis:**
 
@@ -187,21 +185,21 @@ MoodSense-DSP422/
 
 ---
 
-## 🎓 Educational Value
+## Educational Value
 
 This project demonstrates:
 
-- ✅ End-to-end ML pipeline (data → model → deployment)
-- ✅ Multimodal learning (text + audio features)
-- ✅ Semantic search with neural embeddings
-- ✅ Classical ML model comparison
-- ✅ Explainable AI techniques (SHAP)
-- ✅ Production deployment (Streamlit Cloud)
-- ✅ Git workflow with large files (Git LFS)
+-  End-to-end ML pipeline (data → model → deployment)
+-  Multimodal learning (text + audio features)
+-  Semantic search with neural embeddings
+-  Classical ML model comparison
+-  Explainable AI techniques (SHAP)
+-  Production deployment (Streamlit Cloud)
+-  Git workflow with large files (Git LFS)
 
 ---
 
-## 🚧 Limitations & Future Work
+##  Limitations & Future Work
 
 ### Current Limitations
 - Mood labels are BERT-generated, not human-annotated
@@ -220,7 +218,7 @@ This project demonstrates:
 
 ---
 
-## 📝 Citation
+##  Citation
 
 If you use this project in your research or work, please cite:
 
@@ -235,7 +233,7 @@ If you use this project in your research or work, please cite:
 
 ---
 
-## 👥 Team
+##  Team
 
 - **Ankit Mittal** - [LinkedIn](#) | [GitHub](#)
 - **Albin Anto Jose** - [LinkedIn](#) | [GitHub](#)
@@ -244,7 +242,7 @@ If you use this project in your research or work, please cite:
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
 
@@ -259,7 +257,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ---
 
-## 📧 Contact
+##  Contact
 
 For questions or collaboration opportunities:
 - **Email:** [your-email@example.com]
