@@ -1,2 +1,8 @@
-[runner]
-pythonVersion = "3.11"
+# .streamlit/config.toml
+[server]
+headless = true
+enableCORS = false
+port = $PORT
+
+[python]
+version = "3.11"
