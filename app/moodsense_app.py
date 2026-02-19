@@ -14,6 +14,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import StandardScaler
 import plotly.express as px
 import plotly.graph_objects as go
+from pathlib import Path
 
 # ═══════════════════════════════════════════════════════════════════════
 # PAGE CONFIGURATION
@@ -137,8 +138,9 @@ def load_scaler():
 def load_embeddings():
     """Load pre-computed song embeddings"""
     try:
-        embeddings = np.load('../data/processed/song_embeddings_30k.npy')
-        metadata = pd.read_csv('../data/processed/song_metadata_30k.csv')
+        base_dir = Path(__file__).resolve().parent
+        embeddings = np.load(base_dir / "song_embeddings_30k.npy")
+        metadata = pd.read_csv(base_dir / "song_metadata_30k.csv")
         return embeddings, metadata
     except FileNotFoundError:
         st.error("⚠️ Embedding files not found. Please upload song_embeddings_30k.npy and song_metadata_30k.csv")
@@ -151,7 +153,7 @@ scaler = load_scaler()
 # Load data with error handling
 try:
     song_embeddings, song_metadata = load_embeddings()
-    st.sidebar.success(f"✅ Loaded {len(song_embeddings):,} songs")
+    st.sidebar.success(f" Loaded {len(song_embeddings):,} songs")
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
@@ -295,13 +297,13 @@ st.markdown("---")
 # ═══════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.header("⚙️ Controls")
+    st.header(" Controls")
     
     # Playlist size
     playlist_size = st.slider("Playlist Size", 5, 50, 20)
     
     # Advanced controls
-    with st.expander("🎛️ Advanced Audio Adjustments"):
+    with st.expander("Advanced Audio Adjustments"):
         energy_boost = st.slider("Energy Boost", -20, 20, 0)
         mood_boost = st.slider("Positiveness Boost", -20, 20, 0)
         diversity_filter = st.checkbox("Diversity Filter (2 songs/artist)", value=True)
@@ -309,7 +311,7 @@ with st.sidebar:
     st.markdown("---")
     
     # Project info
-    st.header("📊 Project Info")
+    st.header(" Project Info")
     st.markdown("""
     **Team:** Group 3
     - Ankit Mittal
@@ -330,7 +332,7 @@ with st.sidebar:
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    st.subheader("💬 Enter Your Music Prompt")
+    st.subheader(" Enter Your Music Prompt")
     
     # Main input
     user_prompt = st.text_input(
@@ -340,7 +342,7 @@ with col1:
     )
     
     # Example prompts
-    st.markdown("**💡 Try these examples:**")
+    st.markdown("** Try these examples:**")
     example_prompts = [
         "energetic workout songs",
         "sad heartbreak songs for crying",
@@ -360,7 +362,7 @@ with col1:
     # Generate button
     if st.button("🎵 Generate Playlist", type="primary", use_container_width=True):
         if not user_prompt:
-            st.warning("⚠️ Please enter a prompt first!")
+            st.warning(" Please enter a prompt first!")
         else:
             with st.spinner("🎵 Finding perfect songs for you..."):
                 playlist = generate_playlist(
@@ -371,7 +373,7 @@ with col1:
                     diversity=diversity_filter
                 )
                 
-                st.success(f"✅ Found {len(playlist)} songs matching: **'{user_prompt}'**")
+                st.success(f" Found {len(playlist)} songs matching: **'{user_prompt}'**")
                 
                 # Display playlist
                 st.subheader("🎧 Your Playlist")
@@ -391,14 +393,14 @@ with col1:
                 # Download button
                 csv = playlist.to_csv(index=False)
                 st.download_button(
-                    label="📥 Download Playlist CSV",
+                    label="Download Playlist CSV",
                     data=csv,
                     file_name=f"moodsense_playlist_{user_prompt[:20]}.csv",
                     mime="text/csv"
                 )
 
 with col2:
-    st.subheader("📊 Insights")
+    st.subheader(" Insights")
     
     if user_prompt and st.session_state.get('playlist') is not None:
         playlist = st.session_state['playlist']
@@ -423,7 +425,7 @@ with col2:
         st.metric("Avg Vibe", f"{playlist['positiveness'].mean():.0f}/100")
         st.metric("Avg Match Score", f"{playlist['similarity'].mean():.3f}")
     else:
-        st.info("💡 Generate a playlist to see insights here!")
+        st.info(" Generate a playlist to see insights here!")
 
 # ═══════════════════════════════════════════════════════════════════════
 # FOOTER

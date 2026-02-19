@@ -47,6 +47,23 @@ Top 20 Ranked Results
 ```
 
 ---
+Steps:
+
+1.Make sure your virtual environment is activated:
+python3 -m venv venv311_clean
+source venv311_clean/bin/activate
+
+2.Install dependencies:
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
+3.Run the notebook(run by cell or anything)
+
+4.Run Streamlit app
+
+streamlit run app/moodsense_app.py
+
 
 ##  Results
 
@@ -86,7 +103,7 @@ cd MoodSense-DSP422
 pip install -r requirements.txt
 
 # 3. Download data files (from Google Drive)
-# Place in data/processed/:
+# Place in app/:
 #   - song_embeddings_30k.npy
 #   - song_metadata_30k.csv
 
@@ -103,24 +120,26 @@ App opens at `http://localhost:8501`
 
 ```
 MoodSense-DSP422/
-├── README.md                          # This file
+├── README.md 
+├── requirements.txt   
+├── .streamlit/ 
+│   ├──config.toml                    
 ├── data/
 │   ├── raw/                          # Original datasets
-│   └── processed/                    # Embeddings & metadata
+│   └── processed/                    
 ├── notebooks/
 │   ├── MoodSense_Complete_Pipeline.ipynb  # Main notebook
-│   └── ...
-├── models/                           # Saved ML models
+│   └── ..                      # Saved ML models
 │   ├── model_text.pkl
 │   ├── scaler.pkl
 │   └── tfidf_vectorizer.pkl
 ├── app/                              # Streamlit demo
 │   ├── moodsense_app.py
-│   ├── requirements.txt
-│   └── README.md
+|.  |--- # Embeddings & metadata
 └── reports/                          # Project deliverables
     ├── final_report.pdf
-    └── presentation.pptx
+    └── presentation.pptx.
+├── models/     
 ```
 
 ---
