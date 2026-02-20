@@ -237,35 +237,12 @@ This project demonstrates:
 
 ---
 
-##  Citation
-
-If you use this project in your research or work, please cite:
-
-```bibtex
-@misc{moodsense2024,
-  title={MoodSense: AI-Powered Music Playlist Generation},
-  author={Mittal, Ankit and Jose, Albin Anto and Bag, Nandini and Mulla, Kasheena},
-  year={2024},
-  course={MS DSP 422 - Practical Machine Learning}
-}
-```
-
----
-
 ##  Team
 
 - **Ankit Mittal** - [LinkedIn](#) | [GitHub](#)
 - **Albin Anto Jose** - [LinkedIn](#) | [GitHub](#)
-- **Nandini Bag** - [LinkedIn](#) | [GitHub](#)
+- **Nandini Bag** - [https://www.linkedin.com/in/nandini-bag/](#) | [https://github.com/Nandini1Bag](#)
 - **Kasheena Mulla** - [LinkedIn](#) | [GitHub](#)
-
----
-
-##  License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
----
 
 ##  Acknowledgements
 
@@ -273,15 +250,5 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 - **Dataset:** Kaggle Spotify Tracks Dataset
 - **Models:** Sentence-Transformers library (Hugging Face)
 - **Deployment:** Streamlit Cloud
-
----
-
-##  Contact
-
-For questions or collaboration opportunities:
-- **Email:** [your-email@example.com]
-- **Project Link:** [https://github.com/YOUR_USERNAME/MoodSense-DSP422](https://github.com/YOUR_USERNAME/MoodSense-DSP422)
-
----
 
 **Built with ❤️ for MS DSP 422 | Northwestern University**
