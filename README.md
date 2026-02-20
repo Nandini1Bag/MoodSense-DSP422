@@ -129,7 +129,8 @@ MoodSense-DSP422/
 │   └── processed/                    
 ├── notebooks/
 │   ├── MoodSense_Complete_Pipeline.ipynb  # Main notebook
-│   └── ..                      # Saved ML models
+│   └── .. 
+├── models/                      # Saved ML models
 │   ├── model_text.pkl
 │   ├── scaler.pkl
 │   └── tfidf_vectorizer.pkl
@@ -138,8 +139,7 @@ MoodSense-DSP422/
 |.  |--- # Embeddings & metadata
 └── reports/                          # Project deliverables
     ├── final_report.pdf
-    └── presentation.pptx.
-├── models/     
+    └── presentation.pptx.    
 ```
 
 ---
