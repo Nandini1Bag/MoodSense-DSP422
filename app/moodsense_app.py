@@ -64,18 +64,22 @@ def _download_file(url: str, dest: Path):
                 f.write(chunk)
 
 def ensure_hf_files():
-    """Download embedding files from HF if not already present."""
+    """Download embedding files from HF if not already present. Messages vanish after completion."""
     app_dir = Path(__file__).resolve().parent
+    needs_download = [fname for fname, _ in HF_FILES.items() if not (app_dir / fname).exists()]
+    if not needs_download:
+        return
+    placeholder = st.empty()
     for fname, url in HF_FILES.items():
         dest = app_dir / fname
         if not dest.exists():
-            st.info(f"⏬ Downloading `{fname}` from Hugging Face (first run only)…")
+            placeholder.info(f"⏬ Downloading `{fname}` from Hugging Face (first run only)…")
             try:
                 _download_file(url, dest)
-                st.success(f"✅ `{fname}` ready.")
             except Exception as e:
-                st.error(f"❌ Failed to download `{fname}`: {e}")
+                placeholder.error(f"❌ Failed to download `{fname}`: {e}")
                 st.stop()
+    placeholder.empty()
 
 ensure_hf_files()
 
