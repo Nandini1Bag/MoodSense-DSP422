@@ -1,23 +1,85 @@
+############################
 # Python
+############################
 __pycache__/
 *.py[cod]
+*.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+############################
+# Virtual Environments
+############################
 env/
 venv/
+venv*/
 venv311_clean/
 venv313/
 
+############################
 # Jupyter
+############################
 .ipynb_checkpoints
 
-# OS
+############################
+# OS Files
+############################
 .DS_Store
 Thumbs.db
 
-# Raw data - keep local only (DON'T push to GitHub)
-data/raw/*.csv
-data/processed/*.npy
-data/processed/*.csv
+############################
+# Large Data Files (DO NOT PUSH)
+############################
+*.npy
+*.faiss
+*.pkl
+*.joblib
+*.pt
+*.bin
+*.h5
 
+############################
+# MLflow
+############################
+mlruns/
+notebooks/mlruns/
+
+############################
+# Data
+############################
+data/raw/
+data/processed/
+
+############################
 # Models
-models/*.pkl
+############################
+models/
+
+############################
+# Logs
+############################
+*.log
+
+############################
+# Streamlit cache
+############################
+.streamlit/secrets.toml
+
+############################
+# IDE
+############################
+.vscode/
+.idea/

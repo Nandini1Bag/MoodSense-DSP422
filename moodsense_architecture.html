@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoodSense — System Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #07090d;
+  --s1:      #0d1117;
+  --s2:      #131920;
+  --s3:      #1a2330;
+  --border:  #1e2d3d;
+  --border2: #243344;
+  --text:    #e8edf2;
+  --muted:   #64748b;
+  --dim:     #374151;
+  --green:   #22c55e;
+  --glow:    rgba(34,197,94,0.15);
+  --blue:    #38bdf8;
+  --purple:  #a78bfa;
+  --orange:  #fb923c;
+  --pink:    #f472b6;
+  --yellow:  #facc15;
+  --mono:    'DM Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --body:    'Instrument Sans', sans-serif;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Grid bg ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(34,197,94,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,197,94,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem 5rem;
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 4rem;
+  animation: fadeDown 0.7s ease both;
+}
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 0.75rem;
+}
+.title {
+  font-family: var(--display);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #e8edf2 0%, #64748b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.05;
+  margin-bottom: 0.5rem;
+}
+.subtitle {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+/* ── Section label ── */
+.section-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Phase pill ── */
+.phase-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid;
+  margin-bottom: 1.25rem;
+}
+.phase-pill.p1 { color: var(--blue);   border-color: rgba(56,189,248,0.3);   background: rgba(56,189,248,0.06); }
+.phase-pill.p2 { color: var(--purple); border-color: rgba(167,139,250,0.3);  background: rgba(167,139,250,0.06); }
+.phase-pill.em { color: var(--green);  border-color: rgba(34,197,94,0.3);    background: rgba(34,197,94,0.06); }
+
+/* ── Node styles ── */
+.node {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  cursor: default;
+}
+.node:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.node.highlight {
+  border-color: rgba(34,197,94,0.4);
+  background: linear-gradient(135deg, var(--s1) 0%, rgba(34,197,94,0.05) 100%);
+}
+.node.highlight:hover {
+  box-shadow: 0 8px 24px rgba(34,197,94,0.1);
+}
+.node-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+.node-title {
+  font-family: var(--display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+  line-height: 1.2;
+}
+.node-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.node-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  margin-right: 0.3rem;
+}
+
+/* ── Arrow ── */
+.arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem;
+  position: relative;
+}
+.arrow::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -100%);
+  width: 1px;
+  height: 1.2rem;
+  background: var(--border2);
+}
+.arrow-head {
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid var(--border2);
+}
+.arrow.green::before { background: rgba(34,197,94,0.5); }
+.arrow.green .arrow-head { border-top-color: rgba(34,197,94,0.5); }
+.arrow.blue::before { background: rgba(56,189,248,0.4); }
+.arrow.blue .arrow-head { border-top-color: rgba(56,189,248,0.4); }
+.arrow.purple::before { background: rgba(167,139,250,0.4); }
+.arrow.purple .arrow-head { border-top-color: rgba(167,139,250,0.4); }
+
+/* ── Horizontal arrows for side-by-side ── */
+.h-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  flex-shrink: 0;
+}
+.h-arrow::before {
+  content: '→';
+  font-size: 1rem;
+  color: var(--border2);
+}
+.h-arrow.green::before { color: rgba(34,197,94,0.6); }
+
+/* ── Merge node ── */
+.merge-arrow {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0;
+  height: 3rem;
+  position: relative;
+  margin: 0 1rem;
+}
+.merge-line-left, .merge-line-right {
+  position: absolute;
+  top: 0;
+  width: 30%;
+  height: 1px;
+  background: var(--border2);
+}
+.merge-line-left  { left: 20%; }
+.merge-line-right { right: 20%; }
+.merge-line-down {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 100%;
+  background: var(--border2);
+}
+.merge-head {
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 7px solid var(--border2);
+}
+
+/* ── Grid layouts ── */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 0.75rem; }
+
+/* ── Embedding breakdown ── */
+.embed-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+.embed-block {
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  border: 1px solid;
+  position: relative;
+  overflow: hidden;
+}
+.embed-block::before {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+}
+.eb-bert   { border-color: rgba(56,189,248,0.25);   background: rgba(56,189,248,0.05);  }
+.eb-bert::before   { background: var(--blue); }
+.eb-audio  { border-color: rgba(251,146,60,0.25);   background: rgba(251,146,60,0.05);  }
+.eb-audio::before  { background: var(--orange); }
+.eb-ctx    { border-color: rgba(167,139,250,0.25);  background: rgba(167,139,250,0.05); }
+.eb-ctx::before    { background: var(--purple); }
+.eb-mood   { border-color: rgba(34,197,94,0.25);    background: rgba(34,197,94,0.05);   }
+.eb-mood::before   { background: var(--green); }
+
+.embed-dim {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+.embed-name {
+  font-family: var(--display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+.embed-weight {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+.eb-bert  .embed-dim { color: var(--blue);   }
+.eb-audio .embed-dim { color: var(--orange); }
+.eb-ctx   .embed-dim { color: var(--purple); }
+.eb-mood  .embed-dim { color: var(--green);  }
+
+/* ── Weight bar ── */
+.weight-bar-wrap { margin-top: 0.5rem; }
+.weight-bar-bg {
+  background: var(--border);
+  border-radius: 3px;
+  height: 3px;
+  overflow: hidden;
+}
+.weight-bar-fg {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s ease 0.5s;
+}
+
+/* ── Total vector ── */
+.total-vector {
+  background: linear-gradient(135deg, var(--s1) 0%, rgba(34,197,94,0.08) 100%);
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.total-num {
+  font-family: var(--mono);
+  font-size: 2.5rem;
+  font-weight: 500;
+  color: var(--green);
+  line-height: 1;
+  flex-shrink: 0;
+}
+.total-label {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+.total-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Retrieval pipeline ── */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.pipe-step {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.pipe-connector {
+  width: 2px;
+  background: var(--border2);
+  margin: 0 1.5rem;
+  flex-shrink: 0;
+  position: relative;
+}
+.pipe-connector::after {
+  content: '';
+  position: absolute;
+  bottom: -5px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 6px solid var(--border2);
+}
+.pipe-connector.green { background: rgba(34,197,94,0.5); }
+.pipe-connector.green::after { border-top-color: rgba(34,197,94,0.5); }
+
+.pipe-node {
+  flex: 1;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  margin: 0.3rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s;
+}
+.pipe-node:hover {
+  border-color: var(--border2);
+  background: var(--s2);
+}
+.pipe-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  width: 2.5rem;
+  text-align: center;
+}
+.pipe-title {
+  font-family: var(--display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+.pipe-detail {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.pipe-tag {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* ── Model table ── */
+.model-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+.model-table th {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.75rem 1rem;
+  background: var(--s2);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.model-table td {
+  padding: 0.7rem 1rem;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.model-table tr:last-child td { border-bottom: none; }
+.model-table tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+.model-table tr:hover td { background: rgba(34,197,94,0.04); }
+.acc-chip {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.15rem 0.6rem;
+  border-radius: 6px;
+  display: inline-block;
+}
+.acc-best { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+.acc-mid  { background: rgba(56,189,248,0.1);  color: var(--blue);  border: 1px solid rgba(56,189,248,0.25); }
+.acc-low  { background: rgba(100,116,139,0.1); color: var(--muted); border: 1px solid var(--border); }
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+.legend-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+
+/* ── Animations ── */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim { animation: fadeUp 0.6s ease both; }
+.anim-1 { animation-delay: 0.1s; }
+.anim-2 { animation-delay: 0.2s; }
+.anim-3 { animation-delay: 0.3s; }
+.anim-4 { animation-delay: 0.4s; }
+.anim-5 { animation-delay: 0.5s; }
+.anim-6 { animation-delay: 0.6s; }
+.anim-7 { animation-delay: 0.7s; }
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+  margin: 3rem 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .grid2, .grid3, .grid4, .embed-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="eyebrow">MS DSP 422 · Group 3 · System Architecture</div>
+    <div class="title">MoodSense</div>
+    <div class="subtitle">AI-Powered Music Playlist System — Full Architecture & Data Flow</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 1 -->
+  <!-- ══════════════════════════════════════════ -->
+
+  <div class="section-label anim anim-1">Phase 1 — Mood Classification</div>
+  <div class="phase-pill p1 anim anim-1">🧠 Classification Pipeline</div>
+
+  <!-- Input data -->
+  <div class="anim anim-1">
+  <div class="grid2" style="margin-bottom:0.6rem;">
+    <div class="node">
+      <div class="node-label">Primary Dataset</div>
+      <div class="node-title">spotify_dataset_withemotion.csv</div>
+      <div class="node-sub">551,443 songs · emotion labels · audio features · 9 context tags (Good for Party, Work, Exercise…)</div>
+      <span class="node-badge" style="background:rgba(56,189,248,0.1);color:var(--blue);border:1px solid rgba(56,189,248,0.2);">551K rows</span>
+    </div>
+    <div class="node">
+      <div class="node-label">Lyrics Supplement</div>
+      <div class="node-title">spotify_millsongdata.csv</div>
+      <div class="node-sub">57,650 songs · richer + longer lyric text · left-joined by normalized song+artist key</div>
+      <span class="node-badge" style="background:rgba(251,146,60,0.1);color:var(--orange);border:1px solid rgba(251,146,60,0.2);">57K rows</span>
+    </div>
+  </div>
+  </div>
+
+  <div class="arrow blue anim anim-2"><div class="arrow-head"></div></div>
+
+  <!-- Mood Mapping -->
+  <div class="node anim anim-2" style="margin-bottom:0.6rem;">
+    <div class="node-label">Data Cleaning + Mood Mapping</div>
+    <div class="node-title">6 Emotions → 4 Mood Classes</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;margin-top:0.75rem;">
+      <div style="background:rgba(250,204,21,0.08);border:1px solid rgba(250,204,21,0.2);border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-bottom:0.3rem;">joy + surprise</div>
+        <div style="font-family:var(--display);font-weight:700;color:var(--yellow);font-size:0.9rem;">😊 Happy</div>
+      </div>
+      <div style="background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-bottom:0.3rem;">sadness + fear</div>
+        <div style="font-family:var(--display);font-weight:700;color:var(--blue);font-size:0.9rem;">😢 Sad</div>
+      </div>
+      <div style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-bottom:0.3rem;">anger</div>
+        <div style="font-family:var(--display);font-weight:700;color:var(--orange);font-size:0.9rem;">😤 Anger</div>
+      </div>
+      <div style="background:rgba(244,114,182,0.08);border:1px solid rgba(244,114,182,0.2);border-radius:8px;padding:0.6rem 0.75rem;text-align:center;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);margin-bottom:0.3rem;">love</div>
+        <div style="font-family:var(--display);font-weight:700;color:var(--pink);font-size:0.9rem;">💕 Love</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow anim anim-2"><div class="arrow-head"></div></div>
+
+  <!-- Balanced sampling + Feature engineering -->
+  <div class="grid2 anim anim-3" style="margin-bottom:0.6rem;">
+    <div class="node">
+      <div class="node-label">Balanced Sampling</div>
+      <div class="node-title">15,000 songs / class</div>
+      <div class="node-sub">60K total training songs. Per-class cap prevents majority-class bias without SMOTE complexity.</div>
+      <span class="node-badge" style="background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.2);">60K balanced</span>
+    </div>
+    <div class="node">
+      <div class="node-label">Feature Engineering</div>
+      <div class="node-title">3-Group Feature Matrix</div>
+      <div class="node-sub">
+        <span style="color:var(--blue);">TF-IDF</span> 20K unigrams+bigrams · 
+        <span style="color:var(--orange);">Audio</span> 11 scaled features · 
+        <span style="color:var(--purple);">NLP</span> VADER(3) + keywords(4)
+      </div>
+      <span class="node-badge" style="background:rgba(56,189,248,0.1);color:var(--blue);border:1px solid rgba(56,189,248,0.2);">20,007 features</span>
+    </div>
+  </div>
+
+  <div class="arrow anim anim-3"><div class="arrow-head"></div></div>
+
+  <!-- 3 Models -->
+  <div class="grid3 anim anim-4" style="margin-bottom:0.6rem;">
+    <div class="node">
+      <div class="node-label">Model A</div>
+      <div class="node-title">Text-Only</div>
+      <div class="node-sub">TF-IDF → Logistic Regression<br>Balanced class weights</div>
+      <span class="node-badge" style="background:rgba(100,116,139,0.1);color:var(--muted);border:1px solid var(--border);">~62%</span>
+    </div>
+    <div class="node">
+      <div class="node-label">Model B</div>
+      <div class="node-title">Audio-Only</div>
+      <div class="node-sub">11 features → XGBoost<br>300 trees, depth 6</div>
+      <span class="node-badge" style="background:rgba(100,116,139,0.1);color:var(--muted);border:1px solid var(--border);">~44%</span>
+    </div>
+    <div class="node">
+      <div class="node-label">Model C</div>
+      <div class="node-title">Combined</div>
+      <div class="node-sub">TF-IDF + Audio → LR<br>hstack sparse matrix</div>
+      <span class="node-badge" style="background:rgba(100,116,139,0.1);color:var(--muted);border:1px solid var(--border);">~62%</span>
+    </div>
+  </div>
+
+  <div class="arrow anim anim-4"><div class="arrow-head"></div></div>
+
+  <!-- Ensemble -->
+  <div class="node highlight anim anim-5" style="margin-bottom:0.6rem;">
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div class="node-label">Enhanced Model — Deployed in App</div>
+        <div class="node-title">Ensemble: LinearSVC 60% + LR 40%</div>
+        <div class="node-sub">Balanced 15K/class · TF-IDF + 7 NLP features (20,007 total) · CalibratedClassifierCV wrapper for predict_proba()</div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-family:var(--mono);font-size:2rem;color:var(--green);font-weight:500;line-height:1;">~68%</div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);">accuracy</div>
+        <div style="font-family:var(--mono);font-size:1rem;color:var(--green);margin-top:0.2rem;">0.63</div>
+        <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);">F1 macro</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow green anim anim-5"><div class="arrow-head" style="border-top-color:rgba(34,197,94,0.5);"></div></div>
+
+  <!-- Output Phase 1 -->
+  <div class="node anim anim-5" style="border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);margin-bottom:0.6rem;">
+    <div class="node-label">Phase 1 Output → saved to disk</div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.25rem;">
+      <span class="node-badge" style="background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.25);font-size:0.7rem;padding:0.3rem 0.75rem;">model_text.pkl (CalibratedSVC)</span>
+      <span class="node-badge" style="background:rgba(56,189,248,0.1);color:var(--blue);border:1px solid rgba(56,189,248,0.25);font-size:0.7rem;padding:0.3rem 0.75rem;">tfidf_vectorizer.pkl</span>
+      <span class="node-badge" style="background:rgba(167,139,250,0.1);color:var(--purple);border:1px solid rgba(167,139,250,0.25);font-size:0.7rem;padding:0.3rem 0.75rem;">label_encoder.pkl</span>
+      <span class="node-badge" style="background:rgba(251,146,60,0.1);color:var(--orange);border:1px solid rgba(251,146,60,0.25);font-size:0.7rem;padding:0.3rem 0.75rem;">scaler.pkl + context_scaler.pkl</span>
+      <span class="node-badge" style="background:rgba(244,114,182,0.1);color:var(--pink);border:1px solid rgba(244,114,182,0.25);font-size:0.7rem;padding:0.3rem 0.75rem;">nlp_scaler.pkl</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 2 — EMBEDDINGS -->
+  <!-- ══════════════════════════════════════════ -->
+
+  <div class="section-label anim anim-1">Phase 2 — Multimodal Embedding</div>
+  <div class="phase-pill p2 anim anim-1">🎛️ Song Embedding Generation</div>
+
+  <!-- 4 modalities -->
+  <div class="embed-grid anim anim-2">
+    <div class="embed-block eb-bert">
+      <div class="embed-dim">768</div>
+      <div class="embed-name" style="color:var(--blue);">BERT Lyrics</div>
+      <div class="node-sub" style="font-size:0.7rem;">all-mpnet-base-v2<br>Semantic meaning of lyrics</div>
+      <div class="embed-weight">Weight: 1.0×  ·  ~53% signal</div>
+      <div class="weight-bar-wrap">
+        <div class="weight-bar-bg">
+          <div class="weight-bar-fg" style="width:53%;background:var(--blue);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="embed-block eb-audio">
+      <div class="embed-dim">11</div>
+      <div class="embed-name" style="color:var(--orange);">Audio Features</div>
+      <div class="node-sub" style="font-size:0.7rem;">Energy, Tempo, Dance<br>Acousticness, Loudness…</div>
+      <div class="embed-weight">Weight: 2.0×  ·  ~8% signal</div>
+      <div class="weight-bar-wrap">
+        <div class="weight-bar-bg">
+          <div class="weight-bar-fg" style="width:8%;background:var(--orange);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="embed-block eb-ctx">
+      <div class="embed-dim">9</div>
+      <div class="embed-name" style="color:var(--purple);">Context Tags</div>
+      <div class="node-sub" style="font-size:0.7rem;">Good for Party / Study<br>Gym / Driving / Morning…</div>
+      <div class="embed-weight">Weight: 4.0×  ·  ~13% signal</div>
+      <div class="weight-bar-wrap">
+        <div class="weight-bar-bg">
+          <div class="weight-bar-fg" style="width:13%;background:var(--purple);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="embed-block eb-mood">
+      <div class="embed-dim">4</div>
+      <div class="embed-name" style="color:var(--green);">Mood Probs</div>
+      <div class="node-sub" style="font-size:0.7rem;">P(Happy) P(Sad)<br>P(Anger) P(Love)</div>
+      <div class="embed-weight">Weight: 5.0×  ·  ~26% signal</div>
+      <div class="weight-bar-wrap">
+        <div class="weight-bar-bg">
+          <div class="weight-bar-fg" style="width:26%;background:var(--green);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- normalize + concat -->
+  <div class="node anim anim-3" style="margin-top:0.75rem;margin-bottom:0.6rem;text-align:center;">
+    <div class="node-label">Per-Modality L2 Normalization → Weight Scaling → Concatenate</div>
+    <div style="font-family:var(--mono);font-size:0.82rem;color:var(--muted);margin-top:0.4rem;">
+      (bert/‖bert‖)×1.0 ‖ (audio/‖audio‖)×2.0 ‖ (ctx/‖ctx‖)×4.0 ‖ (mood/‖mood‖)×5.0
+    </div>
+  </div>
+
+  <div class="arrow green anim anim-3"><div class="arrow-head" style="border-top-color:rgba(34,197,94,0.5);"></div></div>
+
+  <!-- Total vector -->
+  <div class="total-vector anim anim-4">
+    <div class="total-num">806</div>
+    <div>
+      <div class="total-label">Weighted Song Embedding Vector</div>
+      <div class="total-sub">768 (BERT) + 11 (audio) + 9 (context) + 4 (mood) = 792 raw → scaled to 806 dims · saved as song_embeddings_50k.npy</div>
+    </div>
+    <div style="margin-left:auto;text-align:right;flex-shrink:0;">
+      <div style="font-family:var(--mono);font-size:0.75rem;color:var(--green);">50,000 songs</div>
+      <div style="font-family:var(--mono);font-size:0.62rem;color:var(--muted);">~320 MB on disk</div>
+    </div>
+  </div>
+
+  <div class="arrow green anim anim-4"><div class="arrow-head" style="border-top-color:rgba(34,197,94,0.5);"></div></div>
+
+  <!-- FAISS -->
+  <div class="node highlight anim anim-5" style="margin-bottom:0;">
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <div style="font-size:1.8rem;">⚡</div>
+      <div style="flex:1;">
+        <div class="node-label">Vector Index</div>
+        <div class="node-title">FAISS IndexFlatIP (Inner Product after L2 Norm = Cosine)</div>
+        <div class="node-sub">50K vectors · ~1ms per query vs ~100ms numpy · song_index_50k.faiss</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+        <div style="text-align:center;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.5rem 0.75rem;">
+          <div style="font-family:var(--mono);font-size:1rem;color:var(--green);">~1ms</div>
+          <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);">FAISS</div>
+        </div>
+        <div style="text-align:center;background:rgba(100,116,139,0.08);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;">
+          <div style="font-family:var(--mono);font-size:1rem;color:var(--muted);">~100ms</div>
+          <div style="font-family:var(--mono);font-size:0.58rem;color:var(--muted);">numpy</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- PHASE 2 — RETRIEVAL -->
+  <!-- ══════════════════════════════════════════ -->
+
+  <div class="section-label anim anim-1">Phase 2 — Prompt Retrieval Pipeline</div>
+  <div class="phase-pill p2 anim anim-1">🔍 Query Encoding → Search → Playlist</div>
+
+  <div class="anim anim-2" style="display:flex;gap:1rem;align-items:stretch;">
+
+    <!-- Left: pipeline steps -->
+    <div style="flex:1;">
+      <div class="pipeline">
+
+        <div class="pipe-node" style="border-color:rgba(250,204,21,0.3);background:rgba(250,204,21,0.04);">
+          <div class="pipe-icon">💬</div>
+          <div style="flex:1;">
+            <div class="pipe-title">User Prompt</div>
+            <div class="pipe-detail">"sad heartbreak songs for crying alone at night"</div>
+          </div>
+          <div class="pipe-tag" style="background:rgba(250,204,21,0.1);color:var(--yellow);border:1px solid rgba(250,204,21,0.2);">INPUT</div>
+        </div>
+
+        <div style="width:2px;height:1.5rem;background:var(--border2);margin-left:2.1rem;"></div>
+
+        <div class="pipe-node">
+          <div class="pipe-icon">📖</div>
+          <div style="flex:1;">
+            <div class="pipe-title">Prompt Expansion</div>
+            <div class="pipe-detail">"sad" → "sad melancholy heartbreak lonely crying emotional tears pain sorrow"</div>
+          </div>
+          <div class="pipe-tag" style="background:rgba(56,189,248,0.1);color:var(--blue);border:1px solid rgba(56,189,248,0.2);">NLP</div>
+        </div>
+
+        <div style="width:2px;height:1.5rem;background:var(--border2);margin-left:2.1rem;"></div>
+
+        <!-- 4 encoders -->
+        <div style="background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1.1rem;">
+          <div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;">Parallel Encoding — 4 Channels</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <div style="background:rgba(56,189,248,0.05);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:0.6rem 0.75rem;">
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--blue);">BERT ENCODE</div>
+              <div style="font-size:0.78rem;font-weight:600;margin-top:0.15rem;">all-mpnet-base-v2</div>
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);">→ 768-dim</div>
+            </div>
+            <div style="background:rgba(251,146,60,0.05);border:1px solid rgba(251,146,60,0.2);border-radius:8px;padding:0.6rem 0.75rem;">
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--orange);">AUDIO INTENT</div>
+              <div style="font-size:0.78rem;font-weight:600;margin-top:0.15rem;">Keyword rules</div>
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);">→ 11-dim</div>
+            </div>
+            <div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:0.6rem 0.75rem;">
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--purple);">CONTEXT MAP</div>
+              <div style="font-size:0.78rem;font-weight:600;margin-top:0.15rem;">Activity keywords</div>
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);">→ 9-dim</div>
+            </div>
+            <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.6rem 0.75rem;">
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--green);">MOOD CLASSIFIER</div>
+              <div style="font-size:0.78rem;font-weight:600;margin-top:0.15rem;">CalibratedSVC</div>
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--muted);">→ 4-dim</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:2px;height:1.5rem;background:var(--border2);margin-left:2.1rem;"></div>
+
+        <div class="pipe-node">
+          <div class="pipe-icon">⚖️</div>
+          <div style="flex:1;">
+            <div class="pipe-title">Weighted Embedding</div>
+            <div class="pipe-detail">Normalize each modality · apply 1× / 2× / 4× / 5× weights · concatenate → 806-dim prompt vector</div>
+          </div>
+          <div class="pipe-tag" style="background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.2);">806-dim</div>
+        </div>
+
+        <div style="width:2px;height:1.5rem;background:var(--border2);margin-left:2.1rem;"></div>
+
+        <div class="pipe-node" style="border-color:rgba(244,114,182,0.3);background:rgba(244,114,182,0.04);">
+          <div class="pipe-icon">🔒</div>
+          <div style="flex:1;">
+            <div class="pipe-title">Hard Mood Filter</div>
+            <div class="pipe-detail">If confidence ≥ 40%: restrict candidate pool to dominant mood only (e.g. "Sad" → only Sad songs)</div>
+          </div>
+          <div class="pipe-tag" style="background:rgba(244,114,182,0.1);color:var(--pink);border:1px solid rgba(244,114,182,0.2);">FILTER</div>
+        </div>
+
+        <div style="width:2px;height:1.5rem;background:rgba(34,197,94,0.4);margin-left:2.1rem;"></div>
+
+        <div class="pipe-node" style="border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.04);">
+          <div class="pipe-icon">⚡</div>
+          <div style="flex:1;">
+            <div class="pipe-title">FAISS IndexFlatIP Search</div>
+            <div class="pipe-detail">Cosine similarity on filtered pool · top-K results ranked by similarity score · ~1ms latency</div>
+          </div>
+          <div class="pipe-tag" style="background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.2);">~1ms</div>
+        </div>
+
+        <div style="width:2px;height:1.5rem;background:rgba(34,197,94,0.4);margin-left:2.1rem;"></div>
+
+        <div class="pipe-node">
+          <div class="pipe-icon">🎲</div>
+          <div style="flex:1;">
+            <div class="pipe-title">Diversity Filter</div>
+            <div class="pipe-detail">Max 2 songs per artist · walk ranked list until top-K unique artists filled</div>
+          </div>
+          <div class="pipe-tag" style="background:rgba(167,139,250,0.1);color:var(--purple);border:1px solid rgba(167,139,250,0.2);">DEDUPE</div>
+        </div>
+
+        <div style="width:2px;height:1.5rem;background:var(--border2);margin-left:2.1rem;"></div>
+
+        <div class="pipe-node" style="border-color:rgba(250,204,21,0.3);background:rgba(250,204,21,0.04);">
+          <div class="pipe-icon">🎧</div>
+          <div style="flex:1;">
+            <div class="pipe-title">Ranked Playlist</div>
+            <div class="pipe-detail">Song · Artist · Mood · Similarity score · Energy · Vibe → Streamlit UI</div>
+          </div>
+          <div class="pipe-tag" style="background:rgba(250,204,21,0.1);color:var(--yellow);border:1px solid rgba(250,204,21,0.2);">OUTPUT</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right: sidebar notes -->
+    <div style="width:220px;display:flex;flex-direction:column;gap:0.75rem;flex-shrink:0;">
+      <div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);padding-bottom:0.5rem;border-bottom:1px solid var(--border);">Design Decisions</div>
+
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:0.75rem;font-size:0.72rem;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--blue);margin-bottom:0.3rem;">WHY PROMPT EXPANSION?</div>
+        Short prompts like "happy" collapse to similar BERT regions. Expansion pushes the vector into a more specific semantic space.
+      </div>
+
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:0.75rem;font-size:0.72rem;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--orange);margin-bottom:0.3rem;">WHY NORMALIZE?</div>
+        Without L2 norm, 768-dim BERT dominates cosine signal. Mood + context contribute &lt;3% regardless of their values.
+      </div>
+
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:0.75rem;font-size:0.72rem;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--pink);margin-bottom:0.3rem;">WHY HARD FILTER?</div>
+        Soft weighting can't guarantee mood exclusion. Restricting the candidate pool is the only reliable way to prevent cross-mood results.
+      </div>
+
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:0.75rem;font-size:0.72rem;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--green);margin-bottom:0.3rem;">WHY FAISS?</div>
+        numpy cosine at 50K songs: ~100ms. FAISS IndexFlatIP: ~1ms. Scales to 100M songs at ~20ms.
+      </div>
+
+      <div style="background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:0.75rem;font-size:0.72rem;">
+        <div style="font-family:var(--mono);font-size:0.58rem;color:var(--purple);margin-bottom:0.3rem;">CONTEXT WEIGHT 4×?</div>
+        Activity tags (Good for…) were underutilized — without heavy weighting, "gym music" and "study music" return identical results.
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- MODEL PERFORMANCE TABLE -->
+  <!-- ══════════════════════════════════════════ -->
+
+  <div class="section-label anim anim-1">Model Performance Summary</div>
+
+  <table class="model-table anim anim-2">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Training Data</th>
+        <th>Features</th>
+        <th>Accuracy</th>
+        <th>F1 Macro</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Text-Only LR</strong></td>
+        <td>Random 50K</td>
+        <td style="font-family:var(--mono);font-size:0.72rem;">TF-IDF 20K</td>
+        <td><span class="acc-chip acc-mid">~62%</span></td>
+        <td style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);">0.58</td>
+        <td style="color:var(--muted);font-size:0.75rem;">Baseline — lyrics carry emotion signal</td>
+      </tr>
+      <tr>
+        <td><strong>Audio-Only XGBoost</strong></td>
+        <td>Random 50K</td>
+        <td style="font-family:var(--mono);font-size:0.72rem;">11 audio features</td>
+        <td><span class="acc-chip acc-low">~44%</span></td>
+        <td style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);">0.32</td>
+        <td style="color:var(--muted);font-size:0.75rem;">Near random — audio ≠ lyric-based mood</td>
+      </tr>
+      <tr>
+        <td><strong>Combined LR</strong></td>
+        <td>Random 50K</td>
+        <td style="font-family:var(--mono);font-size:0.72rem;">TF-IDF + 11 audio</td>
+        <td><span class="acc-chip acc-mid">~62%</span></td>
+        <td style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);">0.58</td>
+        <td style="color:var(--muted);font-size:0.75rem;">Audio adds no lift over text alone</td>
+      </tr>
+      <tr>
+        <td><strong>LR + Balanced + NLP</strong></td>
+        <td>15K/class (60K)</td>
+        <td style="font-family:var(--mono);font-size:0.72rem;">TF-IDF + 7 NLP</td>
+        <td><span class="acc-chip acc-mid">~65%</span></td>
+        <td style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);">0.60</td>
+        <td style="color:var(--muted);font-size:0.75rem;">Balanced sampling biggest gain</td>
+      </tr>
+      <tr>
+        <td><strong>LinearSVC + Balanced</strong></td>
+        <td>15K/class (60K)</td>
+        <td style="font-family:var(--mono);font-size:0.72rem;">TF-IDF + 7 NLP</td>
+        <td><span class="acc-chip acc-mid">~67%</span></td>
+        <td style="font-family:var(--mono);font-size:0.75rem;color:var(--muted);">0.62</td>
+        <td style="color:var(--muted);font-size:0.75rem;">Max-margin better on sparse 20K features</td>
+      </tr>
+      <tr style="outline: 1px solid rgba(34,197,94,0.3);">
+        <td><strong style="color:var(--green);">Ensemble SVC+LR ★</strong></td>
+        <td>15K/class (60K)</td>
+        <td style="font-family:var(--mono);font-size:0.72rem;">TF-IDF + 7 NLP</td>
+        <td><span class="acc-chip acc-best">~68%</span></td>
+        <td style="font-family:var(--mono);font-size:0.75rem;color:var(--green);font-weight:600;">0.63</td>
+        <td style="font-size:0.75rem;color:var(--green);font-weight:500;">Deployed in app · 60% SVC + 40% LR</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- Footer -->
+  <div style="text-align:center;font-family:var(--mono);font-size:0.62rem;color:var(--dim);letter-spacing:0.1em;">
+    MOODSENSE · MS DSP 422 · GROUP 3 · Ankit Mittal · Albin Anto Jose · Nandini Bag · Kasheena Mulla
+  </div>
+
+</div>
+</body>
+</html>
