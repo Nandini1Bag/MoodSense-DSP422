@@ -14,6 +14,8 @@ import pickle
 import re
 import time
 import logging
+import os
+import requests
 from pathlib import Path
 
 import numpy as np
@@ -41,6 +43,41 @@ except ImportError:
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 _log = logging.getLogger("moodsense")
+
+# ═══════════════════════════════════════════════════════════════════════
+# HUGGING FACE FILE DOWNLOAD (runs once on first deploy)
+# ═══════════════════════════════════════════════════════════════════════
+
+HF_BASE = "https://huggingface.co/123Nandini/moodsense-embeddings/resolve/main/"
+
+HF_FILES = {
+    "song_embeddings_50k.npy": HF_BASE + "song_embeddings_50k.npy",
+    "song_index_50k.faiss":    HF_BASE + "song_index_50k.faiss",
+}
+
+def _download_file(url: str, dest: Path):
+    """Stream-download a file from URL to dest path."""
+    with requests.get(url, stream=True, timeout=300) as r:
+        r.raise_for_status()
+        with open(dest, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+def ensure_hf_files():
+    """Download embedding files from HF if not already present."""
+    app_dir = Path(__file__).resolve().parent
+    for fname, url in HF_FILES.items():
+        dest = app_dir / fname
+        if not dest.exists():
+            st.info(f"⏬ Downloading `{fname}` from Hugging Face (first run only)…")
+            try:
+                _download_file(url, dest)
+                st.success(f"✅ `{fname}` ready.")
+            except Exception as e:
+                st.error(f"❌ Failed to download `{fname}`: {e}")
+                st.stop()
+
+ensure_hf_files()
 
 # ═══════════════════════════════════════════════════════════════════════
 # PAGE CONFIG
@@ -288,7 +325,7 @@ st.markdown("""
     transition: all 0.2s !important;
 }
 .stButton > button:hover {
-    background: #d4ff50 !important;
+    background: #1DB954 !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 6px 20px rgba(200,245,66,0.25) !important;
 }
@@ -507,15 +544,16 @@ def load_models():
         'le': _l('label_encoder.pkl'),
     }
 
-@st.cache_data
-def load_embeddings_and_index():
+@st.cache_resource
+def load_vector_system():
+    """Load embeddings and FAISS index (cached across reruns)."""
     for suffix in ['50k', '30k']:
         ep = _find(f"song_embeddings_{suffix}.npy")
         mp = _find(f"song_metadata_{suffix}.csv")
         if ep.exists() and mp.exists():
-            emb = np.load(ep)
-            meta = pd.read_csv(mp)
-            idx = None
+            emb  = np.load(str(ep))
+            meta = pd.read_csv(str(mp))
+            idx  = None
             if FAISS_AVAILABLE:
                 fp = _find(f"song_index_{suffix}.faiss")
                 if fp.exists():
@@ -527,7 +565,7 @@ def load_embeddings_and_index():
                     idx = faiss.IndexFlatIP(emb.shape[1])
                     idx.add(emb_f32)
             return emb, meta, idx
-    st.error("⚠️ Embedding files not found. Run notebook Section 8.")
+    st.error("⚠️ Embedding files not found. Download from Hugging Face failed or run notebook Section 8.")
     st.stop()
 
 
@@ -541,7 +579,7 @@ with st.spinner("Loading MoodSense..."):
     model_text     = models['model_text']
     le             = models['le']
     class_names    = le.classes_
-    song_embeddings, song_metadata, faiss_index = load_embeddings_and_index()
+    song_embeddings, song_metadata, faiss_index = load_vector_system()
 
 _CONTEXT_N = context_scaler.n_features_in_
 _af_path   = _find('models') / 'audio_features.json'
@@ -667,12 +705,10 @@ def extract_context_intent(prompt):
     return context_scaler.transform(ctx.reshape(1,-1))[0]
 
 def get_prompt_mood_probs(prompt):
-    # Build augmented features (tfidf + nlp) to match model_text training
     X_tfidf = tfidf.transform([clean_lyrics(prompt)])
     nlp_feats = build_nlp_features([prompt])
     try:
         from sklearn.preprocessing import StandardScaler as _SS
-        # use raw nlp features scaled if possible — fallback to zeros
         X_full = hstack([X_tfidf, csr_matrix(nlp_feats.astype(np.float32))])
     except:
         X_full = X_tfidf
@@ -858,7 +894,6 @@ tab1, tab2, tab3, tab4 = st.tabs([
 with tab1:
     right = st.container()
 
-    # ── Custom prompt ─────────────────────────────────────────────────
     with right:
         st.markdown('<div class="section-head">Describe Your Vibe</div>', unsafe_allow_html=True)
 
@@ -893,7 +928,6 @@ with tab1:
         elif gen_btn:
             st.warning("Type a mood or vibe first.")
 
-    # ── Generate ──────────────────────────────────────────────────────
     if st.session_state.get('run_pl'):
         st.session_state['run_pl'] = False
         active_prompt = st.session_state.get('pl_prompt','')
@@ -906,7 +940,6 @@ with tab1:
                 'df': pl, 'title': active_title, 'prompt': active_prompt
             }
 
-    # ── Render playlist ───────────────────────────────────────────────
     res = st.session_state.get('pl_result')
     if res and not res['df'].empty:
         pl     = res['df']
@@ -922,7 +955,6 @@ with tab1:
 
         st.markdown("---")
 
-        # Result header
         st.markdown(f"""
         <div class="result-header">
             <div class="result-mood-icon">{mc['emoji']}</div>
@@ -938,7 +970,6 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-        # Metrics
         st.markdown(f"""
         <div class="metrics-row">
             <div class="metric-chip">
@@ -960,7 +991,6 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-        # Scatter + pie side by side
         v1, v2 = st.columns(2)
         with v1:
             if 'energy' in pl.columns and 'positiveness' in pl.columns:
@@ -1000,7 +1030,6 @@ with tab1:
             )
             st.plotly_chart(fig2, use_container_width=True)
 
-        # Tracklist
         st.markdown(f'<div class="section-head" style="margin-top:1rem;">{len(pl)} Tracks</div>', unsafe_allow_html=True)
         st.markdown("""
         <div class="tracklist">
@@ -1039,7 +1068,6 @@ with tab1:
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Download
         st.markdown("<br>", unsafe_allow_html=True)
         st.download_button(
             f"Export CSV ({len(pl)} songs)",
