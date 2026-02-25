@@ -1,5 +1,5 @@
 # MoodSense — Requirements
-# Python 3.11 | macOS ARM64
+# Python 3.11+ | macOS ARM64 (works on Linux for Streamlit Cloud)
 # Install: pip install -r requirements.txt
 
 # ── Core Data & ML ────────────────────────────────────────────────────
@@ -12,10 +12,15 @@ imbalanced-learn>=0.11,<1.0
 
 # ── NLP ───────────────────────────────────────────────────────────────
 sentence-transformers>=2.2,<4.0
-transformers>=4.30,<5.0
+transformers>=4.35,<5.0        # updated for torch.compiler compatibility
 tokenizers>=0.13,<1.0
 vaderSentiment>=3.3,<4.0
 textblob>=0.17,<1.0
+
+# ── PyTorch (fix torch.compiler error) ─────────────────────────────────
+torch>=2.1.0,<3.0               # must be >=2.0 for torch.compiler
+torchvision>=0.16.0,<1.0        # optional if using vision models
+torchaudio>=2.1.0,<3.0          # optional if using audio models
 
 # ── Vector Search ─────────────────────────────────────────────────────
 faiss-cpu>=1.7,<2.0
