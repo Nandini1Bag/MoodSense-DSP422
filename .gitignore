@@ -1,5 +1,98 @@
+############################
+# Python
+############################
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+############################
+# Virtual Environments
+############################
+env/
+venv/
+venv*/
+venv311_clean/
+venv313/
+
+############################
+# Jupyter
+############################
+.ipynb_checkpoints
+
+############################
+# OS Files
+############################
+.DS_Store
+Thumbs.db
+
+############################
+# Large Data Files (DO NOT PUSH)
+############################
+*.npy
+*.faiss
+*.pkl
+*.joblib
+*.pt
+*.bin
+*.h5
+
+############################
+# MLflow
+############################
+mlruns/
+notebooks/mlruns/
+
+############################
+# Data
+############################
+data/raw/
+data/processed/
+
+############################
+# Models
+############################
+models/*
+!models/model_text.pkl
+!models/tfidf_vectorizer.pkl
+!models/label_encoder.pkl
+!models/scaler.pkl
+!models/context_scaler.pkl
+!models/nlp_scaler.pkl
+!models/lgbm_mirex_1548d.pkl
+!models/audio_scaler.pkl
+
+############################
+# Logs
+############################
+*.log
+
+############################
+# Streamlit cache
+############################
+.streamlit/secrets.toml
+
+############################
+# IDE
+############################
+.vscode/
+.idea/
+
+############################
+# Secrets
+############################
 .env
-  .DS_Store
-  __pycache__/
-  *.npy
-  *.csv
