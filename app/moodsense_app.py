@@ -5,7 +5,7 @@ MS DSP 422 - Practical Machine Learning | Group 3
 UI: Premium dark aesthetic inspired by high-end music platforms
     - Tabbed layout: Playlist Generator · Explore · Analytics · Model Performance
     - Pre-designed vibe presets + custom prompt
-    - FAISS vector search + structured logging + MLflow tracking
+    - FAISS vector search + structured logging
 """
 
 import json
@@ -34,12 +34,6 @@ try:
     FAISS_AVAILABLE = True
 except ImportError:
     FAISS_AVAILABLE = False
-
-try:
-    import mlflow
-    MLFLOW_AVAILABLE = True
-except ImportError:
-    MLFLOW_AVAILABLE = False
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 _log = logging.getLogger("moodsense")
@@ -329,7 +323,7 @@ st.markdown("""
     transition: all 0.2s !important;
 }
 .stButton > button:hover {
-    background: #1DB954 !important;
+    background: #d4ff50 !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 6px 20px rgba(200,245,66,0.25) !important;
 }
@@ -818,7 +812,6 @@ with st.sidebar:
         <div><span style="color:#1DB954;">✓</span> {len(song_embeddings):,} songs loaded</div>
         <div><span style="color:#1DB954;">✓</span> {song_embeddings.shape[1]}-dim embeddings</div>
         <div><span style="color:{'#1DB954' if FAISS_AVAILABLE else '#ff4757'};">{'✓' if FAISS_AVAILABLE else '✗'}</span> {faiss_status}</div>
-        <div><span style="color:{'#1DB954' if MLFLOW_AVAILABLE else '#888'};">{'✓' if MLFLOW_AVAILABLE else '–'}</span> MLflow {'active' if MLFLOW_AVAILABLE else 'off'}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -849,7 +842,6 @@ st.markdown("""
         <span class="badge blue">FAISS ANN Search</span>
         <span class="badge">TF-IDF + LinearSVC</span>
         <span class="badge">50K Songs</span>
-        <span class="badge">MLflow Tracking</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -1196,7 +1188,6 @@ with tab4:
         ("Embeddings",      "806-dim weighted",            "Lyric×1 · Audio×2 · Context×4 · Mood×5"),
         ("Vector Search",   "FAISS IndexFlatIP" if FAISS_AVAILABLE else "numpy cosine", "O(log n) ANN search"),
         ("Training Data",   "50K songs balanced",          "15K per class · 4 mood classes"),
-        ("Tracking",        "MLflow" if MLFLOW_AVAILABLE else "Console logging", "Params · metrics · artifacts"),
     ]
 
     for name, val, desc in arch_items:
@@ -1265,7 +1256,7 @@ st.markdown("""
         MS DSP 422 · Practical Machine Learning · Northwestern University
     </div>
     <div style="font-family:'DM Mono',monospace;font-size:0.65rem;color:#444;">
-        Sentence-BERT · TF-IDF · FAISS · MLflow
+        Sentence-BERT · TF-IDF · FAISS
     </div>
 </div>
 """, unsafe_allow_html=True)

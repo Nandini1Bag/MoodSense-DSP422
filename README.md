@@ -2,9 +2,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.31-FF4B4B.svg)](https://streamlit.io/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688.svg)](https://fastapi.tiangolo.com/)
 [![FAISS](https://img.shields.io/badge/FAISS-Vector_Search-orange.svg)](https://github.com/facebookresearch/faiss)
-[![MLflow](https://img.shields.io/badge/MLflow-Experiment_Tracking-blue.svg)](https://mlflow.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **Course:** MS DSP 422 – Practical Machine Learning  
@@ -28,8 +26,6 @@ Traditional music search relies on exact keyword matching and manual tagging. Us
 - **Production Vector Search**: FAISS IndexFlatIP replaces brute-force cosine — scales to 100M songs
 - **Multimodal Embeddings**: 806-dim vector combining BERT semantics, audio features, activity context, and mood
 - **Mood Classification**: 4-class ensemble classifier (Happy, Sad, Anger, Love) ~68% accuracy
-- **FastAPI Backend**: REST endpoints with health checks and live Swagger docs
-- **Experiment Tracking**: MLflow logs every training run — params, metrics, artifacts
 - **Structured Logging**: JSON request logs capturing latency, mood, pool size, top match
 - **Interactive Demo**: Streamlit web app with real-time search metrics displayed per query
 
@@ -105,52 +101,120 @@ pip install -r requirements.txt
 
 # 4. Run notebook to generate models + FAISS index
 #    Execute all cells in: notebooks/MoodSense_Complete_Pipeline.ipynb
-#    Sections 6.5 (accuracy), 6.6 (MLflow), and 8.5 (FAISS) are required
+#    Sections 6.5 (accuracy) and 8.5 (FAISS) are required
 
-# 5. Terminal 1 — Streamlit app
+# 5. Run the Streamlit app
 streamlit run app/moodsense_app.py
-
-# 6. Terminal 2 — FastAPI backend (optional, for API access)
-uvicorn api:app --host 0.0.0.0 --port 8000
 ```
 
 - Streamlit app: `http://localhost:8501`
-- FastAPI docs: `http://localhost:8000/docs`
-- MLflow UI: `mlflow ui` → `http://localhost:5000`
 
 ---
 
-## API Reference
+## Deploying to Streamlit Cloud
 
-The FastAPI backend exposes three endpoints:
+The two large embedding files (`song_embeddings_50k.npy` at ~316 MB and `song_index_50k.faiss`) exceed GitHub's file size limits and cannot be committed to the repo. They are hosted on Hugging Face and downloaded automatically on first deploy.
 
-### `POST /playlist`
-Generate a playlist from a natural language prompt.
+### Step 1 — Install Hugging Face CLI
 
 ```bash
-curl -X POST http://localhost:8000/playlist \
-     -H "Content-Type: application/json" \
-     -d '{"prompt": "sad songs for a rainy night", "top_k": 10}'
+pip install huggingface_hub
 ```
 
-**Response:**
-```json
-{
-  "playlist": [...],
-  "mood_detected": "Sad",
-  "search_latency_ms": 1.3,
-  "search_engine": "FAISS",
-  "pool_size": 12400
-}
+### Step 2 — Create a Hugging Face Repository
+
+1. Go to [https://huggingface.co](https://huggingface.co) and sign in
+2. Click **New Model** (top right)
+3. Name it `moodsense-embeddings`
+4. Set visibility to **Public**
+5. Click **Create Model**
+
+### Step 3 — Login via CLI
+
+```bash
+huggingface-cli login
 ```
 
-### `GET /health`
-Returns model load status and index stats.
+When prompted, paste your token. To get one:
+1. Go to [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+2. Click **New token** → set role to **Write** → click **Create**
+3. Copy and paste into the terminal
 
-### `GET /metrics`
-Returns aggregate request counts, average latency, and mood distribution.
+>  Never share your token — treat it like a password.
 
-Full interactive docs available at `/docs` (Swagger UI).
+### Step 4 — Upload Embedding Files
+
+Navigate to the `app/` folder first, then upload both files:
+
+```bash
+cd app/
+
+hf upload YOUR_HF_USERNAME/moodsense-embeddings song_embeddings_50k.npy
+hf upload YOUR_HF_USERNAME/moodsense-embeddings song_index_50k.faiss
+```
+
+Replace `YOUR_HF_USERNAME` with your actual Hugging Face username (e.g. `123Nandini`).
+
+Each upload shows a progress bar. When complete, the CLI prints a URL like:
+```
+https://huggingface.co/YOUR_HF_USERNAME/moodsense-embeddings/blob/main/song_embeddings_50k.npy
+```
+
+### Step 5 — Update the App Download URL
+
+In `app/moodsense_app.py`, confirm the `HF_BASE` constant matches your username:
+
+```python
+HF_BASE = "https://huggingface.co/YOUR_HF_USERNAME/moodsense-embeddings/resolve/main/"
+```
+
+### Step 6 — Confirm requirements.txt includes
+
+```
+requests
+faiss-cpu
+huggingface_hub
+```
+
+### Step 7 — Push to GitHub and Deploy
+
+```bash
+git add app/moodsense_app.py requirements.txt
+git commit -m "Add HuggingFace auto-download for embeddings"
+git push origin main
+```
+
+Then connect the repo to [https://share.streamlit.io](https://share.streamlit.io).
+
+**What happens on first deploy:**
+1. Streamlit installs dependencies
+2. App starts and detects embedding files are missing
+3. Downloads both files from Hugging Face (~316 MB + FAISS index)
+4. Progress message shows, then disappears automatically
+5. App loads normally
+
+On every subsequent run the files are already present — no download, instant startup.
+
+---
+
+## Re-generating Embeddings (After Notebook Changes)
+
+If you retrain models or change the embedding dimensions, regenerate and re-upload:
+
+```bash
+# Delete old files
+rm app/song_embeddings_50k.npy
+rm app/song_index_50k.faiss
+
+# Re-run notebook Sections 8 and 8.5 to regenerate
+
+# Re-upload to Hugging Face
+cd app/
+hf upload YOUR_HF_USERNAME/moodsense-embeddings song_embeddings_50k.npy
+hf upload YOUR_HF_USERNAME/moodsense-embeddings song_index_50k.faiss
+```
+
+> **Note:** The embedding dimension must match the saved `context_scaler.pkl`. If you see a `ValueError: Incompatible dimension` error, it means the scaler and embeddings were generated in different notebook runs. Re-run Section 8 fully from the top before Section 12 to keep them in sync.
 
 ---
 
@@ -160,7 +224,6 @@ Full interactive docs available at `/docs` (Swagger UI).
 MoodSense-DSP422/
 ├── README.md
 ├── requirements.txt
-├── api.py                             # FastAPI backend (3 endpoints)
 ├── .streamlit/
 │   └── config.toml
 ├── data/
@@ -169,19 +232,19 @@ MoodSense-DSP422/
 ├── notebooks/
 │   └── MoodSense_Complete_Pipeline.ipynb   # 12 sections + 3 new sections
 │       ├── Section 6.5 — Accuracy upgrades (balanced sampling, LinearSVC, ensemble, VADER)
-│       ├── Section 6.6 — MLflow experiment tracking
 │       └── Section 8.5 — FAISS index build + benchmark
 ├── models/
 │   ├── model_text.pkl                 # Ensemble mood classifier
 │   ├── tfidf_vectorizer.pkl
 │   ├── scaler.pkl
+│   ├── context_scaler.pkl
 │   ├── label_encoder.pkl
-│   └── ...                            # 7 models + scalers total
+│   └── audio_features.json            # Exact feature list used by scaler
 ├── app/
 │   ├── moodsense_app.py               # Streamlit app with FAISS + structured logging
-│   ├── song_embeddings_50k.npy        # 806-dim embeddings (generated by notebook)
-│   ├── song_index_50k.faiss           # FAISS index (generated by notebook section 8.5)
-│   ├── songs_50k.csv                  # Song metadata
+│   ├── song_embeddings_50k.npy        #  NOT in repo — hosted on Hugging Face
+│   ├── song_index_50k.faiss           #️ NOT in repo — hosted on Hugging Face
+│   ├── song_metadata_50k.csv          # Song metadata (title, artist, mood, features)
 │   └── audio_features.json            # Feature column list for train-serve consistency
 └── reports/
     ├── final_report.pdf
@@ -198,12 +261,10 @@ MoodSense-DSP422/
 | **Mood Classification** | Ensemble: LinearSVC + Logistic Regression (TF-IDF, 20K features) |
 | **Sentiment Features** | VADER SentimentIntensityAnalyzer |
 | **Vector Search** | FAISS IndexFlatIP (ANN, O(log n)) |
-| **Experiment Tracking** | MLflow (params, metrics, model artifacts) |
-| **API Backend** | FastAPI + Uvicorn |
-| **Frontend** | Streamlit with custom CSS |
 | **Explainability** | SHAP (SHapley Additive exPlanations) |
-| **Deployment** | Streamlit Cloud / GCP Cloud Run |
-| **Version Control** | Git + GitHub (with Git LFS for large files) |
+| **Large File Hosting** | Hugging Face Model Hub |
+| **Deployment** | Streamlit Cloud |
+| **Version Control** | Git + GitHub |
 
 ---
 
@@ -271,10 +332,10 @@ In production we would add: Kubeflow retraining pipeline, Evidently drift monito
 
 ## Team
 
-- **Ankit Mittal** — [LinkedIn](#) | [GitHub](#)
-- **Albin Anto Jose** — [LinkedIn](#) | [GitHub](#)
-- **Nandini Bag** — [LinkedIn](https://www.linkedin.com/in/nandini-bag/) | [GitHub](https://github.com/Nandini1Bag)
-- **Kasheena Mulla** — [LinkedIn](#) | [GitHub](#)
+- **Ankit Mittal** —
+- **Albin Anto Jose** — 
+- **Nandini Bag** —
+- **Kasheena Mulla** — 
 
 ---
 
@@ -283,6 +344,5 @@ In production we would add: Kubeflow retraining pipeline, Evidently drift monito
 - **Course:** MS DSP 422 — Practical Machine Learning, Northwestern University
 - **Dataset:** Kaggle Spotify Tracks Dataset
 - **Models:** Sentence-Transformers (Hugging Face), Facebook FAISS
-- **Tracking:** MLflow (open source)
 
 **Built with ❤️ for MS DSP 422 | Northwestern University**
