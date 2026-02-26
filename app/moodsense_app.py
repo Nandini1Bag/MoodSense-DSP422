@@ -476,6 +476,15 @@ st.markdown("""
 
 /* ── Expander ── */
 details summary { font-family: var(--mono) !important; font-size: 0.72rem !important; letter-spacing: 0.08em !important; text-transform: uppercase !important; }
+
+/* ── Classify Song tab highlight ── */
+[data-testid="stTabs"] button:nth-child(5) {
+    color: var(--accent) !important;
+    border-bottom: 2px solid var(--accent) !important;
+}
+[data-testid="stTabs"] button:nth-child(5):hover {
+    background: rgba(29, 185, 84, 0.08) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -835,13 +844,22 @@ st.markdown("""
         Describe a vibe in natural language. The system encodes your prompt into a
         806-dimensional multimodal space using Sentence-BERT, audio features, activity
         context tags, and mood probabilities — then finds the closest songs via cosine similarity.
+        Also classify any song's emotion directly — lyrics embedded via OpenAI and predicted
+        with a MIREX-anchored LightGBM model (67.18% accuracy).
     </div>
     <div class="hero-badges">
         <span class="badge green">BERT 768-dim</span>
         <span class="badge teal">806-dim Embeddings</span>
         <span class="badge blue">FAISS ANN Search</span>
-        <span class="badge">TF-IDF + LinearSVC</span>
-        <span class="badge">50K Songs</span>
+        <span class="badge teal">TF-IDF + LinearSVC</span>
+        <span class="badge blue">50K Songs</span>
+    </div>
+    <div class="hero-badges">
+        <span class="badge green">OpenAI</span>
+        <span class="badge teal">1548-dim Embeddings</span>
+        <span class="badge blue">MIREX-Anchored</span>
+        <span class="badge teal">LightGBM</span>
+        <span class="badge blue">70K Songs</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -851,6 +869,7 @@ mood_counts = song_metadata['mood'].value_counts() if 'mood' in song_metadata.co
 best_mood   = mood_counts.index[0] if len(mood_counts) else "—"
 
 st.markdown(f"""
+<div class="section-head" style="margin-bottom:0.75rem;">Your Playlist</div>
 <div class="kpi-grid">
     <div class="kpi-card">
         <div class="kpi-num">{len(song_embeddings):,}</div>
@@ -869,6 +888,25 @@ st.markdown(f"""
         <div class="kpi-label">Classifier Accuracy</div>
     </div>
 </div>
+<div class="section-head" style="margin-top:1.25rem;margin-bottom:0.75rem;">Classify Song</div>
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-num">70,000</div>
+        <div class="kpi-label">Training Songs</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-num">1548</div>
+        <div class="kpi-label">Embed Dims</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-num">4</div>
+        <div class="kpi-label">Emotion Classes</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-num">67.18%</div>
+        <div class="kpi-label">Classifier Accuracy</div>
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 
@@ -881,7 +919,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🎵  Explore Dataset",
     "📊  Analytics",
     "🔬  Model Info",
-    "🎯  Classify Song",
+    "🎯  Classify Song  ✦",
 ])
 
 
@@ -1238,6 +1276,93 @@ with tab4:
     ]
 
     for title, text in insights:
+        with st.expander(title):
+            st.markdown(f'<div style="font-size:0.85rem;color:#888;line-height:1.7;">{text}</div>', unsafe_allow_html=True)
+
+    # ── Albin's MIREX-Anchored Pipeline ───────────────────────────────
+    st.markdown("---")
+    st.markdown("""
+    <div style="margin:2rem 0 1.25rem;">
+        <div style="font-family:'Unbounded',sans-serif;font-size:1.4rem;font-weight:700;
+                    color:#f0f0f0;line-height:1.2;margin-bottom:0.5rem;">
+            MIREX-Anchored Classification Pipeline
+        </div>
+        <div style="width:48px;height:3px;background:#1DB954;border-radius:2px;"></div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.markdown(
+        '<div style="font-size:0.82rem;color:#666;margin-bottom:1.25rem;line-height:1.6;">'
+        'A second classification system trained on human-annotated MIREX labels — breaking the circularity '
+        'of BERT-derived labels — and powering the <b style="color:#f0f0f0;">Classify Song</b> tab.'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    mirex_arch = [
+        ("Text Encoder",     "OpenAI text-embedding-3-small",   "1536d dense embeddings per song (lyrics or title)"),
+        ("Audio Features",   "ReccoBeats API → StandardScaler", "12 Spotify audio features scaled to training distribution"),
+        ("Feature Vector",   "1548d combined",                  "1536d text + 12d audio → LightGBM input"),
+        ("Classifier",       "LightGBM (1000 trees)",           "num_leaves=63 · lr=0.05 · subsample=0.8"),
+        ("Label Source",     "MIREX human-annotated",           "686 clips → 4-class centroids → 70K songs re-labelled"),
+        ("Training Data",    "70K songs balanced",              "17,642 per class · Anger · Happy · Love · Sad"),
+    ]
+
+    for name, val, desc in mirex_arch:
+        st.markdown(f"""
+        <div style="background:#111;border:1px solid #1a1a1a;border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;">
+            <div style="font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.12em;
+                        text-transform:uppercase;color:#555;margin-bottom:0.3rem;">{name}</div>
+            <div style="font-size:0.9rem;font-weight:600;color:#1DB954;margin-bottom:0.2rem;">{val}</div>
+            <div style="font-size:0.78rem;color:#666;">{desc}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('<div class="section-head" style="margin-top:1.5rem;">Ablation — Classification Accuracy</div>', unsafe_allow_html=True)
+
+    ablation_df = pd.DataFrame({
+        'Model':    ['LightGBM (BERT labels)', 'LightGBM default', 'LightGBM tuned ★'],
+        'Features': ['TF-IDF + Audio',          'Text 524d + Audio', 'Text 1548d + Audio'],
+        'Labels':   ['BERT',                    'MIREX',             'MIREX'],
+        'Accuracy': [0.6555,                    0.6567,              0.6718],
+        'F1 Macro': [0.6538,                    0.66,                0.67],
+    })
+
+    fig_abl = px.bar(
+        ablation_df.melt(id_vars='Model', value_vars=['Accuracy', 'F1 Macro'], var_name='Metric', value_name='Score'),
+        x='Score', y='Model', color='Metric', barmode='group', orientation='h',
+        color_discrete_map={'Accuracy': '#1DB954', 'F1 Macro': '#42f5a7'},
+        height=320,
+    )
+    fig_abl.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#888', family='DM Mono', size=10),
+        legend=dict(bgcolor='rgba(0,0,0,0)', font=dict(size=9)),
+        xaxis=dict(range=[0.60, 0.72], showgrid=True, gridcolor='#1a1a1a', tickformat='.0%'),
+        yaxis=dict(showgrid=False),
+        margin=dict(l=0, r=0, t=10, b=0),
+    )
+    st.plotly_chart(fig_abl, use_container_width=True)
+
+    mirex_insights = [
+        ("Label source determines audio utility",
+         "With BERT-derived labels (lyrics → BERT → emotion), audio features add exactly 0pp over text alone. "
+         "With MIREX human-annotated labels, audio contributes +2.43pp (LinearSVC) and +3.28pp (LightGBM). "
+         "The problem was never the features — it was the label source."),
+        ("BERT label circularity",
+         "BERT reads lyrics → assigns emotion labels. A classifier trained on the same lyrics to predict BERT's output "
+         "is circular — it learns what BERT said, not real emotion. This is structurally identical to the interim "
+         "report's 85% synthetic-label problem. The 61–65% team ceiling is a label validity ceiling, not a model ceiling."),
+        ("MIREX anchoring breaks the circularity",
+         "MIREX labels are human-annotated from audio listening — independent of lyrics. "
+         "Centroid embeddings from 686 MIREX clips were used to re-label 120K songs via cosine similarity, "
+         "creating a dataset where labels reflect perceived emotion rather than lyrical content."),
+        ("Per-class performance (best model 67.18%)",
+         "Love F1=0.73 · Anger F1=0.68 · Happy F1=0.66 · Sad F1=0.63. "
+         "Love scores highest despite sparse MIREX anchors (57 clips) because its centroid is well-separated. "
+         "Sad is hardest — lyrical introspection is the dominant register across genres (46% of unlabelled songs)."),
+    ]
+
+    for title, text in mirex_insights:
         with st.expander(title):
             st.markdown(f'<div style="font-size:0.85rem;color:#888;line-height:1.7;">{text}</div>', unsafe_allow_html=True)
 
