@@ -876,11 +876,12 @@ st.markdown(f"""
 # TABS
 # ═══════════════════════════════════════════════════════════════════════
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🎧  Your Playlist",
     "🎵  Explore Dataset",
     "📊  Analytics",
     "🔬  Model Info",
+    "🎯  Classify Song",
 ])
 
 
@@ -1239,6 +1240,121 @@ with tab4:
     for title, text in insights:
         with st.expander(title):
             st.markdown(f'<div style="font-size:0.85rem;color:#888;line-height:1.7;">{text}</div>', unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────────────
+# TAB 5 — CLASSIFY SONG (MIREX-anchored LightGBM inference pipeline)
+# ─────────────────────────────────────────────────────────────────────
+with tab5:
+    # Add repo root to path so inference.py (at root) can be imported from app/
+    import sys as _sys
+    _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if _repo_root not in _sys.path:
+        _sys.path.insert(0, _repo_root)
+
+    try:
+        from inference import classify_song as _classify_song
+        _INFERENCE_OK = True
+    except Exception as _ie:
+        _INFERENCE_OK = False
+        _INFERENCE_ERR = str(_ie)
+
+    st.markdown('<div class="section-head">Classify a Song\'s Emotion</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="font-size:0.82rem;color:#888;margin-bottom:1.5rem;line-height:1.6;">'
+        'Uses the MIREX-anchored LightGBM model (67.18% accuracy) — '
+        'fetches lyrics via Genius, audio features via ReccoBeats, '
+        'and embeds with OpenAI <code>text-embedding-3-small</code> (1536d + 12 audio = 1548d).'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    if not _INFERENCE_OK:
+        st.error(f"Inference module could not be loaded: {_INFERENCE_ERR}")
+    else:
+        c_song, c_artist, c_btn = st.columns([3, 2, 1])
+        with c_song:
+            _song   = st.text_input("Song Title", placeholder="e.g. Bad Romance", label_visibility="collapsed")
+        with c_artist:
+            _artist = st.text_input("Artist (optional)", placeholder="e.g. Lady Gaga", label_visibility="collapsed")
+        with c_btn:
+            _go = st.button("Classify →", use_container_width=True)
+
+        st.caption("Song title · Artist (optional)")
+
+        if _go:
+            if not _song.strip():
+                st.warning("Enter a song title to classify.")
+            else:
+                with st.spinner("Searching Spotify · Fetching audio · Embedding lyrics · Predicting…"):
+                    try:
+                        _res    = _classify_song(_song.strip(), _artist.strip() or None)
+                        _emo    = _res['emotion']
+                        _conf   = _res['confidence']
+                        _probs  = _res['probabilities']
+                        _track  = _res['track']
+                        _mc     = MOOD_CONFIG[_emo]
+
+                        # ── Result header ──────────────────────────────────
+                        st.markdown(f"""
+                        <div class="result-header" style="border-color:{_mc['color']}55;background:{_mc['bg']};">
+                            <div class="result-mood-icon">{_mc['emoji']}</div>
+                            <div>
+                                <div class="result-title">{_track['name']}</div>
+                                <div class="result-meta">
+                                    {_track['artist']} &nbsp;·&nbsp;
+                                    Classified as
+                                    <span style="color:{_mc['color']};font-weight:600;">{_emo}</span>
+                                    &nbsp;·&nbsp;
+                                    <span style="font-family:'DM Mono',monospace;">{_conf:.0%} confidence</span>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        # ── Probability chips ───────────────────────────────
+                        _chips = "".join([
+                            f'<div class="metric-chip">'
+                            f'<div class="metric-val" style="color:{MOOD_CONFIG[_l]["color"]};">{_p:.0%}</div>'
+                            f'<div class="metric-lbl">{_l}</div>'
+                            f'</div>'
+                            for _l, _p in _probs.items()
+                        ])
+                        st.markdown(f'<div class="metrics-row">{_chips}</div>', unsafe_allow_html=True)
+
+                        # ── Spotify embed + probability bar chart ───────────
+                        _col_embed, _col_chart = st.columns([1, 1])
+
+                        with _col_embed:
+                            st.components.v1.iframe(_track['embed_url'], height=152)
+
+                        with _col_chart:
+                            _fig = go.Figure(go.Bar(
+                                x=list(_probs.values()),
+                                y=list(_probs.keys()),
+                                orientation='h',
+                                marker_color=[MOOD_CONFIG[_l]['color'] for _l in _probs.keys()],
+                                text=[f"{_p:.0%}" for _p in _probs.values()],
+                                textposition='outside',
+                                textfont=dict(family='DM Mono', size=10, color='#888'),
+                            ))
+                            _fig.update_layout(
+                                paper_bgcolor='rgba(0,0,0,0)',
+                                plot_bgcolor='rgba(0,0,0,0)',
+                                xaxis=dict(range=[0, 1.1], showgrid=False, visible=False),
+                                yaxis=dict(showgrid=False, tickfont=dict(family='DM Mono', size=11)),
+                                margin=dict(l=0, r=40, t=0, b=0),
+                                height=152,
+                            )
+                            st.plotly_chart(_fig, use_container_width=True)
+
+                        if not _res['lyrics_found']:
+                            st.caption("⚠️  Lyrics not found on Genius — classification used the song title embedding only.")
+
+                    except ValueError as _ve:
+                        st.error(str(_ve))
+                    except Exception as _ex:
+                        st.error(f"Classification failed: {_ex}")
 
 
 # ═══════════════════════════════════════════════════════════════════════
