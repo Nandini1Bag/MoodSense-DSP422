@@ -757,6 +757,14 @@ def generate_playlist(user_prompt, top_k=20, diversity=True):
         cand_emb  = song_embeddings
         cand_meta = song_metadata.reset_index(drop=True)
 
+    # Align prompt_vector dimension to match stored embeddings
+    target_dim = cand_emb.shape[1]
+    if prompt_vector.shape[0] != target_dim:
+        if prompt_vector.shape[0] > target_dim:
+            prompt_vector = prompt_vector[:target_dim]
+        else:
+            prompt_vector = np.pad(prompt_vector, (0, target_dim - prompt_vector.shape[0]))
+
     t0 = time.perf_counter()
     sims   = cosine_similarity([prompt_vector], cand_emb)[0]
     ranked = np.argsort(sims)[::-1]
