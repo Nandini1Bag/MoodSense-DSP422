@@ -1112,6 +1112,25 @@ with tab1:
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
+
+        # ── Spotify Preview ───────────────────────────────────────────────
+        with st.expander("▶  Preview a Track on Spotify", expanded=False):
+            track_options = [f"{row['song']} — {row['artist']}" for _, row in pl.iterrows()]
+            selected_track = st.selectbox("Select a track", track_options, key="preview_track_select", label_visibility="collapsed")
+            if selected_track:
+                sel_idx = track_options.index(selected_track)
+                sel_row = pl.iloc[sel_idx]
+                try:
+                    from mirex_pipeline.inference import _spotify_search
+                    with st.spinner("Looking up on Spotify…"):
+                        _track = _spotify_search(sel_row['song'], sel_row['artist'])
+                    if _track:
+                        st.components.v1.iframe(_track['embed_url'], height=152)
+                    else:
+                        st.warning(f"Could not find **{sel_row['song']}** on Spotify.")
+                except Exception as _e:
+                    st.warning(f"Spotify lookup unavailable: {_e}")
+
         st.download_button(
             f"Export CSV ({len(pl)} songs)",
             pl.to_csv(index=False),
