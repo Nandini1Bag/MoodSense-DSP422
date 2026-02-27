@@ -1378,7 +1378,7 @@ with tab5:
         _sys.path.insert(0, _repo_root)
 
     try:
-        from inference import classify_song as _classify_song
+        from mirex_pipeline.inference import classify_song as _classify_song
         _INFERENCE_OK = True
     except Exception as _ie:
         _INFERENCE_OK = False

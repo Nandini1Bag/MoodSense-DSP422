@@ -73,8 +73,13 @@ models/*
 !models/scaler.pkl
 !models/context_scaler.pkl
 !models/nlp_scaler.pkl
-!models/lgbm_mirex_1548d.pkl
-!models/audio_scaler.pkl
+
+############################
+# MIREX Pipeline
+############################
+mirex_pipeline/models/*
+!mirex_pipeline/models/lgbm_mirex_1548d.pkl
+!mirex_pipeline/models/audio_scaler.pkl
 
 ############################
 # Logs

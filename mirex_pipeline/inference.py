@@ -6,10 +6,11 @@ import lyricsgenius
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR  = os.path.dirname(BASE_DIR)   # repo root
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-cfg = dotenv_values(os.path.join(BASE_DIR, '.env'))
+cfg = dotenv_values(os.path.join(ROOT_DIR, '.env'))
 
 # ── Load artifacts ─────────────────────────────────────────────────────────────
 with open(os.path.join(MODEL_DIR, 'lgbm_mirex_1548d.pkl'), 'rb') as f:
