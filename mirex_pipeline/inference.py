@@ -9,8 +9,14 @@ BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR  = os.path.dirname(BASE_DIR)   # repo root
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
 
-# ── Config ─────────────────────────────────────────────────────────────────────
+# ── Config (local .env or Streamlit Cloud secrets) ─────────────────────────────
 cfg = dotenv_values(os.path.join(ROOT_DIR, '.env'))
+if not cfg.get('OPENAI_API_KEY'):
+    try:
+        import streamlit as st
+        cfg = st.secrets
+    except Exception:
+        pass
 
 # ── Load artifacts ─────────────────────────────────────────────────────────────
 with open(os.path.join(MODEL_DIR, 'lgbm_mirex_1548d.pkl'), 'rb') as f:
