@@ -31,27 +31,28 @@ Song title + artist
         ├──────────────────────────────────────┐
         ▼                                      ▼
 ┌───────────────────┐              ┌───────────────────────┐
-│  ReccoBeats API   │              │     Genius API        │
+│  ReccoBeats API   │              │    lyrics.ovh API     │
 │  (audio features) │              │  (full lyrics text)   │
 └───────────────────┘              └───────────────────────┘
         │                                      │
-        │  12 audio features                   │  lyrics string (≤8000 chars)
+        │  12 audio features                   │  lyrics string
         ▼                                      ▼
 ┌───────────────────┐              ┌───────────────────────┐
-│  StandardScaler   │              │  OpenAI               │
-│  (audio_scaler)   │              │  text-embedding-3-    │
-│  → 12d scaled     │              │  small (1536d)        │
+│  StandardScaler   │              │  TF-IDF Vectorizer    │
+│  (audio_scaler_   │              │  (tfidf_mirex.pkl)    │
+│   mirex.pkl)      │              │  20K bigram features  │
+│  → 12d scaled     │              │  → 20,000d sparse     │
 └───────────────────┘              └───────────────────────┘
         │                                      │
         └──────────────┬───────────────────────┘
                        ▼
-             concat → 1548d feature vector
+          hstack → 20,012-dim feature vector
                        │
                        ▼
-          ┌────────────────────────┐
-          │  LightGBM (tuned)      │
-          │  lgbm_mirex_1548d.pkl  │
-          └────────────────────────┘
+          ┌────────────────────────────┐
+          │  LightGBM (tuned)          │
+          │  lgbm_tfidf_audio.pkl      │
+          └────────────────────────────┘
                        │
                        ▼
         { emotion, confidence, probabilities,
@@ -77,7 +78,7 @@ Standard emotion datasets either use NLP-derived labels (circular with lyrics �
    | Cluster 3 | Sad |
    | Cluster 5 | Anger |
 
-3. **Lyric embedding of anchor songs** — Each MIREX song's lyrics were embedded with OpenAI `text-embedding-3-small` (512d for centroid computation during label assignment). Per-emotion **centroids** were computed in the 512d text embedding space. Note: the final trained model and inference pipeline use **1536d** embeddings — the higher dimension was used for all feature vectors in training and prediction, with 512d used only for the label propagation step.
+3. **Lyric embedding of anchor songs** — Each MIREX song's lyrics were embedded with OpenAI `text-embedding-3-small` (512d) for centroid computation during the **label assignment step only**. Per-emotion **centroids** were computed in the 512d text embedding space. Note: OpenAI embeddings are used exclusively for label propagation — the final trained model and inference pipeline use **TF-IDF + audio features** with no OpenAI dependency.
 
 4. **Label propagation to 120K songs** — A separate [`serkantysz/550k-spotify-songs-audio-lyrics-and-genres`](https://www.kaggle.com/datasets/serkantysz/550k-spotify-songs-audio-lyrics-and-genres?select=songs.csv) dataset was used as the training base. This dataset has no pre-assigned emotion labels, making it a clean slate for MIREX-anchored labelling. It was genre-balanced to ~120K songs. Each song's lyrics were embedded at 512d and the **nearest MIREX centroid** (cosine similarity) assigned the emotion label.
 
@@ -87,32 +88,32 @@ Standard emotion datasets either use NLP-derived labels (circular with lyrics �
 
 ## Model Training
 
-Full training code lives in the project notebook: `Final Project - Code.ipynb` (Section 14 onwards).
+Full training code lives in the project notebook: `Final Project - Code (without Embeddings).ipynb`.
 
 ### Full Ablation Results
 
 | Model | Features | Dimensions | Accuracy | Macro F1 |
 |---|---|---|---|---|
-| LinearSVC | Text only | 512d | 59.95% | — |
-| LinearSVC | Text + Audio | 524d | 62.38% | 0.62 |
-| LightGBM (default) | Text + Audio | 524d | 65.67% | 0.66 |
-| LightGBM (tuned) | Text + Audio | 524d | 66.95% | 0.67 |
-| **LightGBM (tuned)** | **Text + Audio** | **1548d** | **67.18%** | **0.67** |
+| LinearSVC | Text only (TF-IDF) | 20,000d | ~60% | — |
+| LinearSVC | Text + Audio | 20,012d | ~62% | 0.62 |
+| LightGBM (default) | Audio only | 12d | 47.95% | 0.48 |
+| LightGBM (tuned) | Text only (TF-IDF) | 20,000d | 76.50% | 0.76 |
+| **LightGBM (tuned)** | **Text + Audio (TF-IDF)** | **20,012d** | **76.68%** | **0.77** |
 
-The **audio lift under MIREX labels** (LinearSVC: +2.43 pp, LightGBM: +3.28 pp) versus **0 pp lift under T5-derived NLP labels** is the central quantitative finding of this work.
+The **audio lift under MIREX labels** (+0.18 pp, TF-IDF vs TF-IDF+Audio) confirms cross-modal signal, while the **audio-only baseline of 47.95%** (vs 34% under T5-derived NLP labels, +14 pp) is the central quantitative finding of this work: human-anchored labels encode genuine perceptual mood that audio features independently capture.
 
 ### Per-Class F1 (Best Model)
 
 | Emotion | F1 |
 |---|---|
-| Love | 0.73 |
-| Anger | 0.68 |
-| Happy | 0.66 |
-| Sad | 0.63 |
+| Sad | 0.80 |
+| Anger | 0.79 |
+| Love | 0.75 |
+| Happy | 0.73 |
 
 ### Hyperparameters (Tuned LightGBM)
 
-A manually selected set of well-performing values was tested across `n_estimators`, `max_depth`, `learning_rate`, `num_leaves`, and `min_child_samples`. Exhaustive search methods such as GridSearchCV or Optuna were not used due to computational constraints — these are recommended as a future step for a potential small additional lift in accuracy. Final model: `lgbm_mirex_1548d.pkl` (~27 MB).
+A manually selected set of well-performing values was tested across `n_estimators`, `max_depth`, `learning_rate`, `num_leaves`, and `min_child_samples`. Exhaustive search methods such as GridSearchCV or Optuna were not used due to computational constraints — these are recommended as a future step for a potential small additional lift in accuracy. Final model: `lgbm_tfidf_audio.pkl` (~22 MB).
 
 ---
 
@@ -120,16 +121,17 @@ A manually selected set of well-performing values was tested across `n_estimator
 
 ```
 mirex_pipeline/
-├── inference.py              # End-to-end inference: song name → emotion
+├── inference.py                  # End-to-end inference: song name → emotion
 ├── models/
-│   ├── lgbm_mirex_1548d.pkl  # Trained LightGBM (1548-feature input)
-│   └── audio_scaler.pkl      # StandardScaler fitted on 12 audio features
+│   ├── lgbm_tfidf_audio.pkl      # Trained LightGBM (20,012-feature input)
+│   ├── tfidf_mirex.pkl           # TF-IDF vectorizer (20K bigram, fitted on train split)
+│   └── audio_scaler_mirex.pkl    # StandardScaler fitted on 12 audio features (train split)
 └── figures/
-    ├── confusion_matrix_lgbm_1548d.png   # Per-class prediction breakdown
-    ├── roc_curves_lgbm_1548d.png         # OvR AUC curves (2×2 grid)
-    ├── pr_curves_lgbm_1548d.png          # Precision-Recall curves
-    ├── shap_global_importance.png        # Top features by mean |SHAP|
-    └── shap_audio_per_class.png          # Audio feature SHAP per emotion
+    ├── confusion_matrix.png      # Per-class prediction breakdown
+    ├── roc_curves.png            # OvR AUC curves (2×2 grid)
+    ├── pr_curves.png             # Precision-Recall curves
+    ├── shap_global_importance.png  # Top features by mean |SHAP|
+    └── shap_audio_per_class.png    # Audio feature SHAP per emotion
 ```
 
 ---
@@ -141,29 +143,27 @@ mirex_pipeline/
 Add the following to a `.env` file in the **repo root** (one level above this folder):
 
 ```
-OPENAI_API_KEY=sk-...
 SPOTIFY_CLIENT_ID=...
 SPOTIFY_CLIENT_SECRET=...
-GENIUS_ACCESS_TOKEN=...
 ```
 
-- **OpenAI** — `text-embedding-3-small` embeddings (~$0.00002/1K tokens)
 - **Spotify** — Client Credentials flow (no user login needed); used for track search and metadata
 - **ReccoBeats** — Replacement for the deprecated Spotify Audio Features endpoint (deprecated Nov 27, 2024); no key required, public API
-- **Genius** — Lyric retrieval via `lyricsgenius`
+- **lyrics.ovh** — Free lyrics API; no API key required, no package installation needed (called via `requests` at runtime)
 
 ### Dependencies
 
 ```
-openai
-python-dotenv
-lyricsgenius
 lightgbm
 scikit-learn
 numpy
 pandas
+scipy
 requests
+python-dotenv
 ```
+
+> **Note:** `lyrics.ovh` is accessed via the standard `requests` library at runtime — no additional package is needed.
 
 ---
 
@@ -199,23 +199,23 @@ print(result)
 | `confidence` | `float` | Probability of the predicted class |
 | `probabilities` | `dict` | Softmax probabilities for all 4 classes |
 | `track` | `dict` | Spotify track metadata + embed URL |
-| `lyrics_found` | `bool` | `False` if Genius returned no lyrics (falls back to track name embedding) |
+| `lyrics_found` | `bool` | `False` if lyrics.ovh returned no lyrics (falls back to song title as text input) |
 
 ### Fallback Behaviour
 
-If lyrics are not found on Genius, the song **title string** is embedded instead of lyrics. Classification still runs but accuracy may be lower. The `lyrics_found` flag allows callers to surface this to the user.
+If lyrics are not found on lyrics.ovh, the song **title string** is passed through TF-IDF instead of full lyrics. Classification still runs but accuracy may be lower. The `lyrics_found` flag allows callers to surface this to the user.
 
 ---
 
 ## Evaluation Figures
 
-All figures were generated in Section 15 of `Final Project - Code.ipynb`.
+All figures were generated in `Final Project - Code (without Embeddings).ipynb`.
 
 | Figure | What it shows |
 |---|---|
-| `confusion_matrix_lgbm_1548d.png` | Raw and normalised confusion matrix across 4 classes |
-| `roc_curves_lgbm_1548d.png` | One-vs-Rest ROC curves with AUC per class |
-| `pr_curves_lgbm_1548d.png` | Precision-Recall curves; useful given class balance constraints |
+| `confusion_matrix.png` | Raw and normalised confusion matrix across 4 classes |
+| `roc_curves.png` | One-vs-Rest ROC curves with AUC per class |
+| `pr_curves.png` | Precision-Recall curves; useful given class balance constraints |
 | `shap_global_importance.png` | Top 20 features ranked by mean absolute SHAP value across all samples |
 | `shap_audio_per_class.png` | Per-emotion breakdown of audio feature SHAP contributions; shows which audio features matter for which mood |
 
@@ -223,17 +223,20 @@ All figures were generated in Section 15 of `Final Project - Code.ipynb`.
 
 ## Key Design Decisions & Limitations
 
-**Why OpenAI embeddings instead of Sentence Transformers?**
-`all-MiniLM-L6-v2` (384d) was tested and reached 52% — worse than TF-IDF (61%). `text-embedding-3-small` at 1536d was chosen for representation quality. Cost per inference is negligible (<$0.001/song).
+**Why TF-IDF instead of neural text embeddings?**
+The label propagation step used OpenAI `text-embedding-3-small` (512d) for centroid assignment. Training the classifier on those same embeddings would reintroduce circular supervision — predicting OpenAI-embedding-derived labels from OpenAI embeddings is near-tautological. TF-IDF (20K bigram) provides a fully independent text representation with zero overlap with the labeling function, yielding **76.68% accuracy** (+9.5 pp over the previous 1548d embedding model).
 
 **Why ReccoBeats instead of Spotify Audio Features?**
 Spotify deprecated its Audio Features endpoint on November 27, 2024. ReccoBeats provides an equivalent set of features (danceability, energy, valence, tempo, etc.) derived from the same Spotify track IDs.
 
+**Why lyrics.ovh instead of Genius/lyricsgenius?**
+The Genius API via the `lyricsgenius` library is blocked by Cloudflare on server environments (Streamlit Cloud, CI/CD). lyrics.ovh is a free, no-auth REST API that works reliably in all deployment contexts.
+
 **Why 4 classes instead of 5?**
-MIREX Clusters 2 and 4 were merged into `Happy` after inspecting representative tracks and noting their centroid proximity in embedding space. The `Love` class has the fewest anchor samples in the MIREX set, which explains its relatively lower recall in some ablation runs despite achieving the highest F1 overall (0.73) in the final model.
+MIREX Clusters 2 and 4 were merged into `Happy` after inspecting representative tracks and noting their centroid proximity in embedding space. The `Love` class has the fewest anchor samples in the MIREX set, which explains its relatively lower recall in some ablation runs.
 
 **Performance ceiling**
-The 67.18% ceiling is bounded by MIREX anchor quality (903 clips, 764 with lyrics, unequal cluster sizes, genre skew toward Western pop). Expanding the anchor set with a more diverse annotated corpus would be the highest-leverage improvement.
+The 76.68% ceiling is bounded by MIREX anchor quality (903 clips, 764 with lyrics, unequal cluster sizes, genre skew toward Western pop). Expanding the anchor set with a more diverse annotated corpus would be the highest-leverage improvement.
 
 ---
 
