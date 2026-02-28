@@ -323,7 +323,7 @@ st.markdown("""
     transition: all 0.2s !important;
 }
 .stButton > button:hover {
-    background: #d4ff50 !important;
+    background: #1DB954 !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 6px 20px rgba(200,245,66,0.25) !important;
 }
