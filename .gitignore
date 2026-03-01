@@ -78,9 +78,8 @@ models/*
 # MIREX Pipeline
 ############################
 mirex_pipeline/models/*
-!mirex_pipeline/models/lgbm_tfidf_audio.pkl
-!mirex_pipeline/models/tfidf_mirex.pkl
-!mirex_pipeline/models/audio_scaler_mirex.pkl
+!mirex_pipeline/models/lgbm_mirex_1548d.pkl
+!mirex_pipeline/models/audio_scaler.pkl
 
 ############################
 # Logs
