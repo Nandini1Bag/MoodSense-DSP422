@@ -1,7 +1,8 @@
 import pickle, requests, re, base64, os
-import numpy as np
+import numpy as np, pandas as pd
+from scipy.sparse import hstack, csr_matrix
 from dotenv import dotenv_values
-from openai import OpenAI
+import lyricsgenius
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +11,7 @@ MODEL_DIR = os.path.join(BASE_DIR, 'models')
 
 # ── Config (local .env or Streamlit Cloud secrets) ─────────────────────────────
 cfg = dotenv_values(os.path.join(ROOT_DIR, '.env'))
-if not cfg.get('OPENAI_API_KEY'):
+if not cfg.get('GENIUS_ACCESS_TOKEN'):
     try:
         import streamlit as st
         cfg = st.secrets
@@ -18,17 +19,22 @@ if not cfg.get('OPENAI_API_KEY'):
         pass
 
 # ── Load artifacts ─────────────────────────────────────────────────────────────
-# LightGBM classifier trained on OpenAI text-embedding-3-small (1536d) + 12
-# Spotify audio features against MIREX human-anchored emotion labels (70K songs, 4 classes)
-with open(os.path.join(MODEL_DIR, 'lgbm_mirex_1548d.pkl'), 'rb') as f:
+# LightGBM classifier trained on TF-IDF (20K bigram features) + 12 Spotify audio
+# features against MIREX human-anchored emotion labels (70K songs, 4 classes)
+with open(os.path.join(MODEL_DIR, 'lgbm_tfidf_audio.pkl'), 'rb') as f:
     lgbm_model = pickle.load(f)
 
+# TF-IDF vectorizer: 20K bigram features, fitted on training split only
+with open(os.path.join(MODEL_DIR, 'tfidf_mirex.pkl'), 'rb') as f:
+    tfidf = pickle.load(f)
+
 # StandardScaler for 12 audio features, fitted on training split only
-with open(os.path.join(MODEL_DIR, 'audio_scaler.pkl'), 'rb') as f:
+with open(os.path.join(MODEL_DIR, 'audio_scaler_mirex.pkl'), 'rb') as f:
     scaler = pickle.load(f)
 
-# ── Clients ─────────────────────────────────────────────────────────────────────
-_openai = OpenAI(api_key=cfg['OPENAI_API_KEY'])
+_genius = lyricsgenius.Genius(cfg['GENIUS_ACCESS_TOKEN'],
+                               verbose=False,
+                               remove_section_headers=True)
 
 # 12 Spotify audio features — must match the order used during training
 AUDIO_COLS = [
@@ -110,42 +116,23 @@ def _clean_track_name(name):
     name = re.sub(r'\s*\(with[^)]*\)',   '', name, flags=re.IGNORECASE)
     return name.strip()
 
-def _lyrics_ovh(song, artist):
-    """Fetch lyrics from lyrics.ovh — free, no API key, no Cloudflare."""
-    try:
-        clean_song = _clean_track_name(song)
-        r = requests.get(
-            f'https://api.lyrics.ovh/v1/{requests.utils.quote(artist)}/{requests.utils.quote(clean_song)}',
-            timeout=8
-        )
-        if r.status_code == 200:
-            return r.json().get('lyrics', None)
-    except Exception:
-        pass
-    return None
-
-def _embed(text):
-    """Embed text using OpenAI text-embedding-3-small (1536d)."""
-    response = _openai.embeddings.create(
-        model='text-embedding-3-small',
-        input=text[:8000],   # stay within token limit
-        dimensions=1536
-    )
-    return np.array(response.data[0].embedding)
+def _genius_lyrics(song, artist):
+    result = _genius.search_song(_clean_track_name(song), artist)
+    return result.lyrics if result else None
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 def classify_song(song: str, artist: str = None) -> dict:
     """
-    Classify a song's emotion using OpenAI embeddings + audio features.
+    Classify a song's emotion using TF-IDF + audio features.
 
     Pipeline:
         1. Spotify Search API       → track metadata + embed URL
         2. ReccoBeats API           → 12 audio features
-        3. lyrics.ovh API           → full lyrics (free, no key, cloud-safe)
+        3. Genius API (lyricsgenius)→ full lyrics
         4. clean_lyrics()           → remove filler words/markers
-        5. OpenAI text-embedding-3-small → 1536d text vector
+        5. tfidf.transform()        → 20K-dim sparse text vector
         6. scaler.transform()       → 12-dim scaled audio vector
-        7. np.concatenate([text, audio]) → 1548-dim feature vector
+        7. hstack([text, audio])    → 20012-dim combined feature vector
         8. lgbm_model.predict_proba → emotion probabilities
 
     Args:
@@ -169,21 +156,21 @@ def classify_song(song: str, artist: str = None) -> dict:
     # 2. Audio features via ReccoBeats
     audio_features = _reccobeats_features(track['id'])
 
-    # 3. Lyrics via lyrics.ovh
-    lyrics       = _lyrics_ovh(track['name'], track['artist']) or ''
+    # 3. Lyrics via Genius
+    lyrics       = _genius_lyrics(track['name'], track['artist']) or ''
     lyrics_found = bool(lyrics)
 
-    # 4 & 5. Clean and embed lyrics with OpenAI
+    # 4 & 5. Clean and vectorise lyrics with TF-IDF
     # Falls back to song title if lyrics not found
     text_input = clean_lyrics(lyrics) if lyrics else track['name']
-    X_text = _embed(text_input)
+    X_text = tfidf.transform([text_input])
 
     # 6. Scale audio features
     audio_vals = [[audio_features[col] for col in AUDIO_COLS]]
-    X_audio    = scaler.transform(audio_vals)[0]
+    X_audio    = csr_matrix(scaler.transform(audio_vals))
 
-    # 7. Combine: OpenAI embedding (1536d) + scaled audio (12d) = 1548d
-    X = np.concatenate([X_text, X_audio]).reshape(1, -1)
+    # 7. Combine: sparse TF-IDF (20000d) + scaled audio (12d) = 20012d
+    X = hstack([X_text, X_audio])
 
     # 8. Predict
     proba   = lgbm_model.predict_proba(X)[0]
