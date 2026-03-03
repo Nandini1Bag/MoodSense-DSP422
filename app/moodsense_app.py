@@ -1415,7 +1415,7 @@ with tab5:
     st.markdown(
         '<div style="font-size:0.82rem;color:#888;margin-bottom:1.5rem;line-height:1.6;">'
         'Uses the MIREX-anchored LightGBM model (67.18% accuracy) — '
-        'fetches lyrics via Genius, audio features via ReccoBeats, '
+        'fetches lyrics via lyrics.ovh, audio features via ReccoBeats, '
         'and embeds with OpenAI <code>text-embedding-3-small</code> (1536d + 12 audio = 1548d).'
         '</div>',
         unsafe_allow_html=True
@@ -1501,7 +1501,7 @@ with tab5:
                             st.plotly_chart(_fig, use_container_width=True)
 
                         if not _res['lyrics_found']:
-                            st.caption("⚠️  Lyrics not found on Genius — classification used the song title embedding only.")
+                            st.caption("⚠️  Lyrics not found on lyrics.ovh — classification used the song title embedding only.")
 
                     except ValueError as _ve:
                         st.error(str(_ve))
