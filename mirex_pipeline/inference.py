@@ -114,17 +114,22 @@ def _lrclib_lyrics(song, artist):
     """Fetch lyrics from lrclib.net — free, no API key required."""
     try:
         clean_song = _clean_track_name(song)
+        print(f"[lrclib] querying: artist='{artist}' track='{clean_song}'")
         r = requests.get(
             'https://lrclib.net/api/get',
             params={'artist_name': artist, 'track_name': clean_song},
             headers={'User-Agent': 'MoodSense/1.0'},
             timeout=8
         )
+        print(f"[lrclib] status={r.status_code}")
         if r.status_code == 200:
             data = r.json()
-            return data.get('plainLyrics') or None
-    except Exception:
-        pass
+            lyrics = data.get('plainLyrics') or None
+            print(f"[lrclib] lyrics={'found' if lyrics else 'empty/null'}")
+            return lyrics
+        print(f"[lrclib] response: {r.text[:200]}")
+    except Exception as e:
+        print(f"[lrclib] exception: {e}")
     return None
 
 def _embed(text):
