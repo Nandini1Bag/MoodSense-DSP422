@@ -110,16 +110,19 @@ def _clean_track_name(name):
     name = re.sub(r'\s*\(with[^)]*\)',   '', name, flags=re.IGNORECASE)
     return name.strip()
 
-def _lyrics_ovh(song, artist):
-    """Fetch lyrics from lyrics.ovh — free, no API key, no Cloudflare."""
+def _lrclib_lyrics(song, artist):
+    """Fetch lyrics from lrclib.net — free, no API key required."""
     try:
         clean_song = _clean_track_name(song)
         r = requests.get(
-            f'https://api.lyrics.ovh/v1/{requests.utils.quote(artist)}/{requests.utils.quote(clean_song)}',
+            'https://lrclib.net/api/get',
+            params={'artist_name': artist, 'track_name': clean_song},
+            headers={'User-Agent': 'MoodSense/1.0'},
             timeout=8
         )
         if r.status_code == 200:
-            return r.json().get('lyrics', None)
+            data = r.json()
+            return data.get('plainLyrics') or None
     except Exception:
         pass
     return None
@@ -169,14 +172,15 @@ def classify_song(song: str, artist: str = None) -> dict:
     # 2. Audio features via ReccoBeats
     audio_features = _reccobeats_features(track['id'])
 
-    # 3. Lyrics via lyrics.ovh
-    lyrics       = _lyrics_ovh(track['name'], track['artist']) or ''
+    # 3. Lyrics via lrclib.net
+    lyrics       = _lrclib_lyrics(track['name'], track['artist']) or ''
     lyrics_found = bool(lyrics)
 
-    # 4 & 5. Clean and embed lyrics with OpenAI
-    # Falls back to song title if lyrics not found
-    text_input = clean_lyrics(lyrics) if lyrics else track['name']
-    X_text = _embed(text_input)
+    # 4 & 5. Clean and embed lyrics with OpenAI; zero-pad if lyrics unavailable (audio-only classification)
+    if lyrics_found:
+        X_text = _embed(clean_lyrics(lyrics))
+    else:
+        X_text = np.zeros(1536, dtype=np.float32)
 
     # 6. Scale audio features
     audio_vals = [[audio_features[col] for col in AUDIO_COLS]]

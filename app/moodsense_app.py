@@ -1501,7 +1501,7 @@ with tab5:
                             st.plotly_chart(_fig, use_container_width=True)
 
                         if not _res['lyrics_found']:
-                            st.caption("⚠️  Lyrics not found on lyrics.ovh — classification used the song title embedding only.")
+                            st.caption("⚠️  Lyrics not found — classified on audio features only.")
 
                     except ValueError as _ve:
                         st.error(str(_ve))
