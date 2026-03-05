@@ -133,6 +133,25 @@ def _lrclib_lyrics(song, artist):
         print(f"[lrclib] exception: {e}")
     return None
 
+def _syncedlyrics_lyrics(song, artist):
+    """Fallback: fetch lyrics via syncedlyrics (tries MusixMatch, Netease, LRCLib)."""
+    try:
+        import syncedlyrics
+        clean_song = _clean_track_name(song)
+        print(f"[syncedlyrics] querying: '{clean_song} {artist}'")
+        result = syncedlyrics.search(f"{clean_song} {artist}", plain_only=True)
+        if result:
+            print("[syncedlyrics] lyrics=found")
+            return result
+        print("[syncedlyrics] lyrics=not found")
+    except Exception as e:
+        print(f"[syncedlyrics] exception: {e}")
+    return None
+
+def _get_lyrics(song, artist):
+    """Try lrclib.net first, fall back to syncedlyrics."""
+    return _lrclib_lyrics(song, artist) or _syncedlyrics_lyrics(song, artist)
+
 def _embed(text):
     """Embed text using OpenAI text-embedding-3-small (1536d)."""
     response = _openai.embeddings.create(
@@ -178,8 +197,8 @@ def classify_song(song: str, artist: str = None) -> dict:
     # 2. Audio features via ReccoBeats
     audio_features = _reccobeats_features(track['id'])
 
-    # 3. Lyrics via lrclib.net
-    lyrics       = _lrclib_lyrics(track['name'], track['artist']) or ''
+    # 3. Lyrics via lrclib.net (fallback: syncedlyrics)
+    lyrics       = _get_lyrics(track['name'], track['artist']) or ''
     lyrics_found = bool(lyrics)
 
     # 4 & 5. Clean and embed lyrics with OpenAI; zero-pad if lyrics unavailable (audio-only classification)
