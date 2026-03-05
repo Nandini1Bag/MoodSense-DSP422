@@ -953,10 +953,10 @@ with tab1:
             n_custom = st.slider("Songs", 5, 40, 20, key="n_custom")
         with cb:
             st.markdown("<br>", unsafe_allow_html=True)
-            gen_btn = st.button("Generate", type="primary", use_container_width=True, key="gen_btn")
+            gen_btn = st.button("Generate", type="primary", width='stretch', key="gen_btn")
         with cc:
             st.markdown("<br>", unsafe_allow_html=True)
-            clr_btn = st.button("Clear", key="clr_btn", use_container_width=True)
+            clr_btn = st.button("Clear", key="clr_btn", width='stretch')
 
         if clr_btn:
             for k in ['pl_prompt','pl_n','pl_title','run_pl','pl_result']:
@@ -1053,7 +1053,7 @@ with tab1:
                 )
                 fig.update_xaxes(showgrid=True, gridcolor='#1a1a1a', color='#555')
                 fig.update_yaxes(showgrid=True, gridcolor='#1a1a1a', color='#555')
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
         with v2:
             mc_counts = pl['mood'].value_counts()
@@ -1071,7 +1071,7 @@ with tab1:
                 height=250, margin=dict(l=0,r=0,t=30,b=0),
                 legend=dict(font=dict(size=9, family='DM Mono'), bgcolor='rgba(0,0,0,0)'),
             )
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width='stretch')
 
         st.markdown(f'<div class="section-head" style="margin-top:1rem;">{len(pl)} Tracks</div>', unsafe_allow_html=True)
         st.markdown("""
@@ -1136,7 +1136,7 @@ with tab1:
             pl.to_csv(index=False),
             f"moodsense_{prompt[:20].replace(' ','_')}.csv",
             "text/csv",
-            use_container_width=True,
+            width='stretch',
         )
 
     elif not res:
@@ -1170,7 +1170,7 @@ with tab2:
 
     disp_cols = [c for c in ['song','artist','mood','energy','positiveness'] if c in fdf.columns]
     rename    = {'song':'Song','artist':'Artist','mood':'Mood','energy':'Energy','positiveness':'Vibe'}
-    st.dataframe(fdf[disp_cols].head(300).rename(columns=rename), use_container_width=True, height=500, hide_index=True)
+    st.dataframe(fdf[disp_cols].head(300).rename(columns=rename), width='stretch', height=500, hide_index=True)
     st.download_button("Export filtered CSV", fdf[disp_cols].to_csv(index=False), f"moodsense_{sel_mood}.csv","text/csv")
 
 
@@ -1197,7 +1197,7 @@ with tab3:
                 legend=dict(font=dict(size=9), bgcolor='rgba(0,0,0,0)'),
                 margin=dict(l=0,r=0,t=40,b=0),
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
         with a2:
             st.markdown('<div class="section-head">Breakdown</div>', unsafe_allow_html=True)
@@ -1235,7 +1235,7 @@ with tab3:
             )
             fig2.update_xaxes(showgrid=False, color='#555')
             fig2.update_yaxes(showgrid=True, gridcolor='#1a1a1a', color='#555')
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width='stretch')
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -1291,7 +1291,7 @@ with tab4:
     )
     fig3.update_xaxes(showgrid=False, color='#555', tickangle=-15)
     fig3.update_yaxes(showgrid=True, gridcolor='#1a1a1a', color='#555')
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(fig3, width='stretch')
 
     st.markdown('<div class="section-head" style="margin-top:1rem;">Why This Architecture</div>', unsafe_allow_html=True)
 
@@ -1368,7 +1368,7 @@ with tab4:
         yaxis=dict(showgrid=False),
         margin=dict(l=0, r=0, t=10, b=0),
     )
-    st.plotly_chart(fig_abl, use_container_width=True)
+    st.plotly_chart(fig_abl, width='stretch')
 
     mirex_insights = [
         ("Label source determines audio utility",
@@ -1430,7 +1430,7 @@ with tab5:
         with c_artist:
             _artist = st.text_input("Artist (optional)", placeholder="e.g. Lady Gaga", label_visibility="collapsed")
         with c_btn:
-            _go = st.button("Classify →", use_container_width=True)
+            _go = st.button("Classify →", width='stretch')
 
         st.caption("Song title · Artist (optional)")
 
@@ -1498,9 +1498,11 @@ with tab5:
                                 margin=dict(l=0, r=40, t=0, b=0),
                                 height=152,
                             )
-                            st.plotly_chart(_fig, use_container_width=True)
+                            st.plotly_chart(_fig, width='stretch')
 
-                        if not _res['lyrics_found']:
+                        if _res['lyrics_found']:
+                            st.caption("✓  Classified using lyrics + audio features.")
+                        else:
                             st.caption("⚠️  Lyrics not found — classified on audio features only.")
 
                     except ValueError as _ve:

@@ -1,5 +1,6 @@
 import pickle, requests, re, base64, os
 import numpy as np
+import pandas as pd
 from dotenv import dotenv_values
 from openai import OpenAI
 
@@ -187,12 +188,15 @@ def classify_song(song: str, artist: str = None) -> dict:
     else:
         X_text = np.zeros(1536, dtype=np.float32)
 
-    # 6. Scale audio features
-    audio_vals = [[audio_features[col] for col in AUDIO_COLS]]
-    X_audio    = scaler.transform(audio_vals)[0]
+    # 6. Scale audio features (DataFrame preserves feature names)
+    audio_df = pd.DataFrame([[audio_features[col] for col in AUDIO_COLS]], columns=AUDIO_COLS)
+    X_audio  = scaler.transform(audio_df)[0]
 
-    # 7. Combine: OpenAI embedding (1536d) + scaled audio (12d) = 1548d
-    X = np.concatenate([X_text, X_audio]).reshape(1, -1)
+    # 7. Combine: OpenAI embedding (1536d) + scaled audio (12d) = 1548d (DataFrame preserves feature names)
+    X = pd.DataFrame(
+        np.concatenate([X_text, X_audio]).reshape(1, -1),
+        columns=lgbm_model.feature_names_in_
+    )
 
     # 8. Predict
     proba   = lgbm_model.predict_proba(X)[0]
