@@ -41,15 +41,36 @@ venv313/
 Thumbs.db
 
 ############################
-# Large Data Files (DO NOT PUSH)
+# Large Data / Embedding Files (DO NOT PUSH)
 ############################
 *.npy
 *.faiss
-*.pkl
-*.joblib
-*.pt
-*.bin
 *.h5
+*.bin
+*.pt
+*.joblib
+app/
+
+############################
+# Large Model Files (DO NOT PUSH)
+# Exception: small fitted sklearn models are allowed
+############################
+models/*
+!models/model_text.pkl
+!models/tfidf_vectorizer.pkl
+!models/label_encoder.pkl
+!models/scaler.pkl
+!models/context_scaler.pkl
+!models/nlp_scaler.pkl
+
+############################
+# Artifacts (scalers, encoders — keep these)
+############################
+artifacts/*.npy
+artifacts/*.faiss
+artifacts/df_sample.pkl
+artifacts/df_balanced.pkl
+artifacts/nlp_features.pkl
 
 ############################
 # MLflow
@@ -62,17 +83,6 @@ notebooks/mlruns/
 ############################
 data/raw/
 data/processed/
-
-############################
-# Models
-############################
-models/*
-!models/model_text.pkl
-!models/tfidf_vectorizer.pkl
-!models/label_encoder.pkl
-!models/scaler.pkl
-!models/context_scaler.pkl
-!models/nlp_scaler.pkl
 
 ############################
 # MIREX Pipeline
