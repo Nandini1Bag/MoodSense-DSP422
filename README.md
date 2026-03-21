@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.31-FF4B4B.svg)](https://streamlit.io/)
 [![FAISS](https://img.shields.io/badge/FAISS-Vector_Search-orange.svg)](https://github.com/facebookresearch/faiss)
+[![UptimeRobot](https://img.shields.io/badge/UptimeRobot-Monitored-green.svg)](https://uptimerobot.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **Course:** MS DSP 422 – Practical Machine Learning  
@@ -28,6 +29,7 @@ Traditional music search relies on exact keyword matching and manual tagging. Us
 - **Mood Classification**: 4-class ensemble classifier (Happy, Sad, Anger, Love) ~68% accuracy
 - **Structured Logging**: JSON request logs capturing latency, mood, pool size, top match
 - **Interactive Demo**: Streamlit web app with real-time search metrics displayed per query
+- **Always-On Deployment**: UptimeRobot monitoring keeps the app awake 24/7 — no cold starts for visitors
 
 ---
 
@@ -140,7 +142,7 @@ When prompted, paste your token. To get one:
 2. Click **New token** → set role to **Write** → click **Create**
 3. Copy and paste into the terminal
 
->  Never share your token — treat it like a password.
+> Never share your token — treat it like a password.
 
 ### Step 4 — Upload Embedding Files
 
@@ -197,6 +199,62 @@ On every subsequent run the files are already present — no download, instant s
 
 ---
 
+## Keeping the App Always On (UptimeRobot)
+
+Streamlit Cloud free tier spins down apps after ~30 minutes of inactivity and fully shuts them down after ~7 days. This means anyone clicking your link after a period of no traffic sees a dead or loading page.
+
+**UptimeRobot** solves this by pinging the app every 5 minutes, preventing it from ever going to sleep.
+
+### Step 1 — Create a Free UptimeRobot Account
+
+Go to [https://uptimerobot.com](https://uptimerobot.com) and sign up. No credit card required.
+
+### Step 2 — Add a New Monitor
+
+1. Click **"+ Add New Monitor"**
+2. Fill in the following:
+
+```
+Monitor Type:  HTTP(s)
+Friendly Name: MoodSense
+URL:           https://yourappname.streamlit.app
+Check every:   5 minutes
+```
+
+3. Click **"Create Monitor"**
+
+### Step 3 — Verify
+
+Your UptimeRobot dashboard will show:
+
+```
+🟢 MoodSense    UP    Response: 200ms
+```
+
+You will also receive an **email alert** if the app ever goes down — so you know before anyone else does.
+
+### Why 5 Minutes (Not Longer)
+
+Streamlit's inactivity threshold is ~30 minutes. A 5-minute ping interval ensures the app is always hit well before that threshold is reached. A 12-hour interval would only prevent the 7-day full shutdown, not the 30-minute sleep — visitors between pings would still hit a dead link.
+
+```
+5 min interval  →  app never reaches sleep threshold  →  always warm  ✅
+12 hr interval  →  app sleeps after 30 min            →  cold starts  ❌
+```
+
+### Free Tier Limits
+
+```
+✅ 50 monitors
+✅ 5-minute check interval
+✅ Email alerts
+✅ No credit card required
+```
+
+Completely sufficient for keeping one Streamlit app alive indefinitely.
+
+---
+
 ## Re-generating Embeddings (After Notebook Changes)
 
 If you retrain models or change the embedding dimensions, regenerate and re-upload:
@@ -230,9 +288,11 @@ MoodSense-DSP422/
 │   ├── raw/                           # Original Kaggle dataset
 │   └── processed/
 ├── notebooks/
-│   └── MoodSense_Complete_Pipeline.ipynb   # 12 sections + 3 new sections
-│       ├── Section 6.5 — Accuracy upgrades (balanced sampling, LinearSVC, ensemble, VADER)
-│       └── Section 8.5 — FAISS index build + benchmark
+│    └── 01_data_prep.ipynb.ipynb  
+|    └── 02_classification.ipynb
+|    └── 03_embeddings_fixed.ipynb   
+|    └── 04_retrieval_demo.ipynb 
+│      
 ├── models/
 │   ├── model_text.pkl                 # Ensemble mood classifier
 │   ├── tfidf_vectorizer.pkl
@@ -242,8 +302,8 @@ MoodSense-DSP422/
 │   └── audio_features.json            # Exact feature list used by scaler
 ├── app/
 │   ├── moodsense_app.py               # Streamlit app with FAISS + structured logging
-│   ├── song_embeddings_50k.npy        #  NOT in repo — hosted on Hugging Face
-│   ├── song_index_50k.faiss           #️ NOT in repo — hosted on Hugging Face
+│   ├── song_embeddings_50k.npy        # NOT in repo — hosted on Hugging Face
+│   ├── song_index_50k.faiss           # NOT in repo — hosted on Hugging Face
 │   ├── song_metadata_50k.csv          # Song metadata (title, artist, mood, features)
 │   └── audio_features.json            # Feature column list for train-serve consistency
 └── reports/
@@ -264,6 +324,7 @@ MoodSense-DSP422/
 | **Explainability** | SHAP (SHapley Additive exPlanations) |
 | **Large File Hosting** | Hugging Face Model Hub |
 | **Deployment** | Streamlit Cloud |
+| **Uptime Monitoring** | UptimeRobot (5-min ping, always-on) |
 | **Version Control** | Git + GitHub |
 
 ---
@@ -333,9 +394,9 @@ In production we would add: Kubeflow retraining pipeline, Evidently drift monito
 ## Team
 
 - **Ankit Mittal** —
-- **Albin Anto Jose** — 
+- **Albin Anto Jose** —
 - **Nandini Bag** —
-- **Kasheena Mulla** — 
+- **Kasheena Mulla** —
 
 ---
 
